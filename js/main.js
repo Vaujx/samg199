@@ -3,17 +3,18 @@
  * This file initializes the application
  */
 
-// Declare variables for functions that are assumed to be defined elsewhere
+// Declare variables for functions that are not defined in this file
 let initializeJSONBins
 let displayProducts
 let displayCart
+let showNotification
 let openCheckoutModal
 let updateCart
-let getSystemStatus
 let closeCheckoutModal
 let processPayment
 let closeSuccessModal
 let toggleChat
+let getSystemStatus
 
 // Initialize the application when the DOM is loaded
 document.addEventListener("DOMContentLoaded", async () => {
@@ -44,6 +45,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.log("Application initialized successfully.")
   } catch (error) {
     console.error("Error initializing application:", error)
+    showNotification("There was an error initializing the application. Please refresh the page.", "error")
   }
 })
 
