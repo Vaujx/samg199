@@ -3,50 +3,77 @@
  * This file handles the admin panel functionality
  */
 
-// Dummy declarations for variables that should be defined elsewhere
-// Replace these with actual imports or definitions
+// Dummy declarations for functions and variables that are assumed to be defined elsewhere
+// These should be replaced with actual imports or definitions in a real application
 const initializeJSONBins = async () => {
-  console.warn("initializeJSONBins is a placeholder function. Replace with actual implementation.")
+  console.warn("initializeJSONBins is a placeholder")
 }
 const setSystemStatus = async (status, user) => {
-  console.warn("setSystemStatus is a placeholder function. Replace with actual implementation.")
+  console.warn("setSystemStatus is a placeholder")
 }
-const CONFIG = { ADMIN_PASSWORD: "password" }
 const getBinData = async (binName) => {
-  console.warn("getBinData is a placeholder function. Replace with actual implementation.")
+  console.warn("getBinData is a placeholder")
   return []
 }
 const updateBinData = async (binName, data) => {
-  console.warn("updateBinData is a placeholder function. Replace with actual implementation.")
+  console.warn("updateBinData is a placeholder")
 }
+const CONFIG = { ADMIN_PASSWORD: "password" } // Replace with actual config
 
 // Initialize admin panel
 document.addEventListener("DOMContentLoaded", () => {
-  // Initialize JSONBins
-  initializeJSONBins().then(() => {
-    // Add event listeners
-    setupAdminEventListeners()
+  console.log("Initializing admin panel...")
 
-    // Check if admin is already logged in
-    const isLoggedIn = localStorage.getItem("seoul_grill_admin_logged_in") === "true"
-    if (isLoggedIn) {
-      showAdminDashboard()
-    }
-  })
+  // Initialize JSONBins
+  initializeJSONBins()
+    .then(() => {
+      console.log("JSONBins initialized for admin panel")
+
+      // Add event listeners
+      setupAdminEventListeners()
+
+      // Check if admin is already logged in
+      const isLoggedIn = localStorage.getItem("seoul_grill_admin_logged_in") === "true"
+      if (isLoggedIn) {
+        console.log("Admin already logged in, showing dashboard")
+        showAdminDashboard()
+      } else {
+        console.log("Admin not logged in, showing login form")
+      }
+    })
+    .catch((error) => {
+      console.error("Error initializing JSONBins for admin panel:", error)
+      alert("There was an error initializing the admin panel. Please try refreshing the page.")
+    })
 })
 
 // Set up admin event listeners
 function setupAdminEventListeners() {
+  console.log("Setting up admin event listeners")
+
   // Login button
   const loginButton = document.getElementById("login-button")
   if (loginButton) {
     loginButton.addEventListener("click", handleAdminLogin)
+    console.log("Login button event listener added")
+  }
+
+  // Enter key in password field
+  const passwordInput = document.getElementById("admin_password")
+  if (passwordInput) {
+    passwordInput.addEventListener("keypress", (event) => {
+      if (event.key === "Enter") {
+        handleAdminLogin()
+      }
+    })
+    console.log("Password input event listener added")
   }
 
   // Logout button
   const logoutButton = document.getElementById("logout-button")
   if (logoutButton) {
     logoutButton.addEventListener("click", handleAdminLogout)
+    console.log("Logout button event listener added")
   }
 
   // System status buttons
@@ -54,33 +81,66 @@ function setupAdminEventListeners() {
   const offlineButton = document.getElementById("offline-button")
 
   if (onlineButton) {
-    onlineButton.addEventListener("click", () => setSystemStatus(true, "admin"))
+    onlineButton.addEventListener("click", () => {
+      console.log("Bringing system online...")
+      setSystemStatus(true, "admin")
+        .then(() => {
+          console.log("System brought online successfully")
+          loadSystemStatus()
+          loadQueuedOrders()
+          loadSystemStatusHistory()
+        })
+        .catch((error) => {
+          console.error("Error bringing system online:", error)
+          alert("Error bringing system online. Please try again.")
+        })
+    })
+    console.log("Online button event listener added")
   }
 
   if (offlineButton) {
-    offlineButton.addEventListener("click", () => setSystemStatus(false, "admin"))
+    offlineButton.addEventListener("click", () => {
+      console.log("Taking system offline...")
+      setSystemStatus(false, "admin")
+        .then(() => {
+          console.log("System taken offline successfully")
+          loadSystemStatus()
+          loadQueuedOrders()
+          loadSystemStatusHistory()
+        })
+        .catch((error) => {
+          console.error("Error taking system offline:", error)
+          alert("Error taking system offline. Please try again.")
+        })
+    })
+    console.log("Offline button event listener added")
   }
 
   // Export button
   const exportButton = document.getElementById("export-button")
   if (exportButton) {
     exportButton.addEventListener("click", exportOrders)
+    console.log("Export button event listener added")
   }
 
   // Import button
   const importButton = document.getElementById("import-button")
   if (importButton) {
     importButton.addEventListener("click", importOrders)
+    console.log("Import button event listener added")
   }
 }
 
 // Handle admin login
 function handleAdminLogin() {
+  console.log("Handling admin login...")
   const passwordInput = document.getElementById("admin_password")
   if (passwordInput && passwordInput.value === CONFIG.ADMIN_PASSWORD) {
+    console.log("Admin login successful")
     localStorage.setItem("seoul_grill_admin_logged_in", "true")
     showAdminDashboard()
   } else {
+    console.log("Admin login failed - incorrect password")
     alert("Invalid password. Please try again.")
   }
 }
@@ -88,12 +148,15 @@ function handleAdminLogin() {
 // Handle admin logout
 function handleAdminLogout(e) {
   e.preventDefault()
+  console.log("Handling admin logout...")
   localStorage.removeItem("seoul_grill_admin_logged_in")
   hideAdminDashboard()
+  console.log("Admin logged out successfully")
 }
 
 // Show admin dashboard
 function showAdminDashboard() {
+  console.log("Showing admin dashboard")
   document.getElementById("admin-login").style.display = "none"
   document.getElementById("admin-dashboard").style.display = "block"
 
@@ -105,6 +168,7 @@ function showAdminDashboard() {
 
 // Hide admin dashboard
 function hideAdminDashboard() {
+  console.log("Hiding admin dashboard")
   document.getElementById("admin-login").style.display = "block"
   document.getElementById("admin-dashboard").style.display = "none"
 }
@@ -112,6 +176,7 @@ function hideAdminDashboard() {
 // Load system status
 async function loadSystemStatus() {
   try {
+    console.log("Loading system status...")
     const systemStatus = await getBinData("SYSTEM_STATUS")
     const systemOnline = systemStatus.status === 1
 
@@ -134,6 +199,7 @@ async function loadSystemStatus() {
       offlineButton.disabled = !systemOnline
     }
 
+    console.log("System status loaded successfully:", systemOnline ? "Online" : "Offline")
     return systemOnline
   } catch (error) {
     console.error("Error loading system status:", error)
@@ -144,6 +210,7 @@ async function loadSystemStatus() {
 // Load queued orders
 async function loadQueuedOrders() {
   try {
+    console.log("Loading queued orders...")
     const orders = await getBinData("ORDERS")
     const queuedOrders = orders.filter((order) => order.status === "queued")
 
@@ -205,6 +272,7 @@ async function loadQueuedOrders() {
       })
     }
 
+    console.log("Queued orders loaded successfully:", queuedOrders.length, "orders")
     return queuedOrders
   } catch (error) {
     console.error("Error loading queued orders:", error)
@@ -223,6 +291,7 @@ function toggleOrderDetails(orderId) {
 // Load system status history
 async function loadSystemStatusHistory() {
   try {
+    console.log("Loading system status history...")
     const systemLog = await getBinData("SYSTEM_LOG")
     const statusHistory = systemLog
       .filter((entry) => entry.action === "system_online" || entry.action === "system_offline")
@@ -257,6 +326,7 @@ async function loadSystemStatusHistory() {
       }
     }
 
+    console.log("System status history loaded successfully:", statusHistory.length, "entries")
     return statusHistory
   } catch (error) {
     console.error("Error loading system status history:", error)
@@ -293,6 +363,7 @@ function padString(str, length) {
 // Export orders to text file
 async function exportOrders() {
   try {
+    console.log("Exporting orders...")
     const orders = await getBinData("ORDERS")
 
     // Generate text content
@@ -348,6 +419,8 @@ async function exportOrders() {
       downloadBackup.href = url
       downloadBackup.style.display = "inline-flex"
     }
+
+    console.log("Orders exported successfully")
   } catch (error) {
     console.error("Error exporting orders:", error)
     alert("Error exporting orders. Please try again.")
@@ -362,6 +435,7 @@ async function importOrders() {
     return
   }
 
+  console.log("Importing orders...")
   const file = fileInput.files[0]
   const reader = new FileReader()
 
@@ -458,6 +532,8 @@ async function importOrders() {
 
       // Reload queued orders
       loadQueuedOrders()
+
+      console.log("Orders imported successfully:", importedCount, "orders")
     } catch (error) {
       console.error("Error importing orders:", error)
 
@@ -480,4 +556,7 @@ function updateFileName(input) {
   const fileName = input.files[0] ? input.files[0].name : "No file chosen"
   document.getElementById("file-name").textContent = fileName
 }
+
+// Make toggleOrderDetails globally available
+window.toggleOrderDetails = toggleOrderDetails
 
