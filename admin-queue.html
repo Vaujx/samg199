@@ -1,477 +1,160 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Order Queue Management - Seoul Grill 199</title>
-    <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>Order Queue Management - Seoul Grill 199</title>
+   <link rel="stylesheet" href="css/style.css">
+   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
-    <!-- Back Button -->
-    <div style="text-align: center; margin-top: 20px;">
-        <a href="index.html" class="back-button">
-            <i class="fas fa-arrow-left"></i> Back to Home
-        </a>
-    </div>
+   <!-- Back Button -->
+   <div style="text-align: center; margin-top: 20px;">
+       <a href="index.html" class="back-button">
+           <i class="fas fa-arrow-left"></i> Back to Home
+       </a>
+   </div>
 
-    <div class="section-title">Order Queue Management</div>
-    
-    <div class="admin-container">
-        <div id="admin-login" class="admin-section">
-            <h3>Admin Login</h3>
-            <p>Please enter the admin password to access the queue management system.</p>
-            
-            <div class="login-form">
-                <div class="form-group">
-                    <label for="admin_password">Admin Password:</label>
-                    <input type="password" id="admin_password" required>
-                </div>
-                <button type="button" id="login-button" class="login-button">Login</button>
-            </div>
-        </div>
-        
-        <div id="admin-dashboard" style="display: none;">
-            <div class="admin-actions">
-                <h2 class="admin-title">Order Queue Management</h2>
-                <div>
-                    <span id="system-status" class="system-status"></span>
-                    <a href="#" id="logout-button" class="logout-button">
-                        <i class="fas fa-sign-out-alt"></i> Logout
-                    </a>
-                </div>
-            </div>
-            
-            <div class="admin-section">
-                <h3>System Status Control</h3>
-                <p>Use these controls to simulate system downtime and recovery. When the system is offline, new orders will be queued. When bringing the system back online, queued orders will be processed automatically.</p>
-                
-                <div class="status-form">
-                    <button type="button" id="online-button" class="status-button online-button">
-                        <i class="fas fa-power-off"></i> Bring System Online
-                    </button>
-                    <button type="button" id="offline-button" class="status-button offline-button">
-                        <i class="fas fa-power-off"></i> Take System Offline
-                    </button>
-                </div>
-            </div>
-            
-            <div class="admin-section">
-                <h3>Queue Status</h3>
-                <div class="queue-info">
-                    <p>Current orders in queue:</p>
-                    <div id="queue-count" class="queue-count">0</div>
-                    <p id="queue-status-message" class="text-center">
-                        No orders are currently queued.
-                    </p>
-                </div>
-                
-                <!-- Database Backup Section -->
-                <h3>Database Backup</h3>
-                
-                <div class="backup-actions">
-                    <button id="export-button" class="export-button">
-                        <i class="fas fa-file-alt"></i> Export Orders to Text File
-                    </button>
-                    
-                    <a id="download-backup" href="#" download class="download-backup" style="display: none;">
-                        <i class="fas fa-download"></i> Download Latest Backup
-                    </a>
-                </div>
-                
-                <div id="last-backup" class="last-backup">
-                    No previous backup found.
-                </div>
-                
-                <!-- Import Form -->
-                <h3>Import Orders</h3>
-                <p>Use this form to import orders from a backup text file.</p>
-                
-                <div class="import-form">
-                    <div class="file-input-wrapper">
-                        <button class="file-input-button">
-                            <i class="fas fa-file-upload"></i> Choose File
-                        </button>
-                        <input type="file" id="import-file" accept=".txt" onchange="updateFileName(this)">
-                        <span class="file-name" id="file-name">No file chosen</span>
-                    </div>
-                    <button type="button" id="import-button" class="import-button">
-                        <i class="fas fa-file-import"></i> Import Orders
-                    </button>
-                </div>
-                
-                <div id="import-results" class="import-results" style="display: none;">
-                    <p id="import-message"></p>
-                </div>
-            </div>
-            
-            <div id="queued-orders-section" class="admin-section" style="display: none;">
-                <h3>Queued Orders</h3>
-                <table class="orders-table">
-                    <thead>
-                        <tr>
-                            <th>Order ID</th>
-                            <th>Customer</th>
-                            <th>Total</th>
-                            <th>Queued At</th>
-                            <th>Details</th>
-                        </tr>
-                    </thead>
-                    <tbody id="queued-orders-list">
-                        <!-- Queued orders will be loaded here -->
-                    </tbody>
-                </table>
-            </div>
-            
-            <div class="admin-section">
-                <h3>System Status History</h3>
-                <table class="history-table">
-                    <thead>
-                        <tr>
-                            <th>Action</th>
-                            <th>Performed By</th>
-                            <th>Timestamp</th>
-                        </tr>
-                    </thead>
-                    <tbody id="status-history">
-                        <!-- Status history will be loaded here -->
-                    </tbody>
-                </table>
-            </div>
-            
-            <div id="processing-results" class="admin-section" style="display: none;">
-                <h3>Processing Results</h3>
-                <div class="processing-results">
-                    <p><strong>Total orders processed:</strong> <span id="total-processed">0</span></p>
-                    <p><strong>Successfully processed:</strong> <span id="success-processed">0</span></p>
-                    <p><strong>Failed to process:</strong> <span id="failed-processed">0</span></p>
-                    
-                    <p id="failed-message" style="display: none;">Failed orders will need manual intervention. Please check the order processing logs.</p>
-                </div>
-            </div>
-        </div>
-    </div>
+   <div class="section-title">Order Queue Management</div>
+   
+   <div class="admin-container">
+       <div id="admin-login" class="admin-section">
+           <h3>Admin Login</h3>
+           <p>Please enter the admin password to access the queue management system.</p>
+           
+           <div class="login-form">
+               <div class="form-group">
+                   <label for="admin_password">Admin Password:</label>
+                   <input type="password" id="admin_password" required>
+               </div>
+               <button type="button" id="login-button" class="login-button">Login</button>
+           </div>
+       </div>
+       
+       <div id="admin-dashboard" style="display: none;">
+           <div class="admin-actions">
+               <h2 class="admin-title">Order Queue Management</h2>
+               <div>
+                   <span id="system-status" class="system-status"></span>
+                   <a href="#" id="logout-button" class="logout-button">
+                       <i class="fas fa-sign-out-alt"></i> Logout
+                   </a>
+               </div>
+           </div>
+           
+           <div class="admin-section">
+               <h3>System Status Control</h3>
+               <p>Use these controls to simulate system downtime and recovery. When the system is offline, new orders will be queued. When bringing the system back online, queued orders will be processed automatically.</p>
+               
+               <div class="status-form">
+                   <button type="button" id="online-button" class="status-button online-button">
+                       <i class="fas fa-power-off"></i> Bring System Online
+                   </button>
+                   <button type="button" id="offline-button" class="status-button offline-button">
+                       <i class="fas fa-power-off"></i> Take System Offline
+                   </button>
+               </div>
+           </div>
+           
+           <div class="admin-section">
+               <h3>Queue Status</h3>
+               <div class="queue-info">
+                   <p>Current orders in queue:</p>
+                   <div id="queue-count" class="queue-count">0</div>
+                   <p id="queue-status-message" class="text-center">
+                       No orders are currently queued.
+                   </p>
+               </div>
+               
+               <!-- Database Backup Section -->
+               <h3>Database Backup</h3>
+               
+               <div class="backup-actions">
+                   <button id="export-button" class="export-button">
+                       <i class="fas fa-file-alt"></i> Export Orders to Text File
+                   </button>
+                   
+                   <a id="download-backup" href="#" download class="download-backup" style="display: none;">
+                       <i class="fas fa-download"></i> Download Latest Backup
+                   </a>
+               </div>
+               
+               <div id="last-backup" class="last-backup">
+                   No previous backup found.
+               </div>
+               
+               <!-- Import Form -->
+               <h3>Import Orders</h3>
+               <p>Use this form to import orders from a backup text file.</p>
+               
+               <div class="import-form">
+                   <div class="file-input-wrapper">
+                       <button class="file-input-button">
+                           <i class="fas fa-file-upload"></i> Choose File
+                       </button>
+                       <input type="file" id="import-file" accept=".txt" onchange="updateFileName(this)">
+                       <span class="file-name" id="file-name">No file chosen</span>
+                   </div>
+                   <button type="button" id="import-button" class="import-button">
+                       <i class="fas fa-file-import"></i> Import Orders
+                   </button>
+               </div>
+               
+               <div id="import-results" class="import-results" style="display: none;">
+                   <p id="import-message"></p>
+               </div>
+           </div>
+           
+           <div id="queued-orders-section" class="admin-section" style="display: none;">
+               <h3>Queued Orders</h3>
+               <table class="orders-table">
+                   <thead>
+                       <tr>
+                           <th>Order ID</th>
+                           <th>Customer</th>
+                           <th>Total</th>
+                           <th>Queued At</th>
+                           <th>Details</th>
+                       </tr>
+                   </thead>
+                   <tbody id="queued-orders-list">
+                       <!-- Queued orders will be loaded here -->
+                   </tbody>
+               </table>
+           </div>
+           
+           <div class="admin-section">
+               <h3>System Status History</h3>
+               <table class="history-table">
+                   <thead>
+                       <tr>
+                           <th>Action</th>
+                           <th>Performed By</th>
+                           <th>Timestamp</th>
+                       </tr>
+                   </thead>
+                   <tbody id="status-history">
+                       <!-- Status history will be loaded here -->
+                   </tbody>
+               </table>
+           </div>
+           
+           <div id="processing-results" class="admin-section" style="display: none;">
+               <h3>Processing Results</h3>
+               <div class="processing-results">
+                   <p><strong>Total orders processed:</strong> <span id="total-processed">0</span></p>
+                   <p><strong>Successfully processed:</strong> <span id="success-processed">0</span></p>
+                   <p><strong>Failed to process:</strong> <span id="failed-processed">0</span></p>
+                   
+                   <p id="failed-message" style="display: none;">Failed orders will need manual intervention. Please check the order processing logs.</p>
+               </div>
+           </div>
+       </div>
+   </div>
 
-    <script src="js/config.js"></script>
-    <script src="js/jsonbin.js"></script>
-    <script src="js/admin.js"></script>
+   <script src="js/config.js"></script>
+   <script src="js/jsonbin-api.js"></script>
+   <script src="js/admin.js"></script>
 </body>
 </html>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Order Queue Management - Seoul Grill 199</title>
-    <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-</head>
-<body>
-    <!-- Back Button -->
-    <div style="text-align: center; margin-top: 20px;">
-        <a href="index.html" class="back-button">
-            <i class="fas fa-arrow-left"></i> Back to Home
-        </a>
-    </div>
 
-    <div class="section-title">Order Queue Management</div>
-    
-    <div class="admin-container">
-        <div id="admin-login" class="admin-section">
-            <h3>Admin Login</h3>
-            <p>Please enter the admin password to access the queue management system.</p>
-            
-            <div class="login-form">
-                <div class="form-group">
-                    <label for="admin_password">Admin Password:</label>
-                    <input type="password" id="admin_password" required>
-                </div>
-                <button type="button" id="login-button" class="login-button">Login</button>
-            </div>
-        </div>
-        
-        <div id="admin-dashboard" style="display: none;">
-            <div class="admin-actions">
-                <h2 class="admin-title">Order Queue Management</h2>
-                <div>
-                    <span id="system-status" class="system-status"></span>
-                    <a href="#" id="logout-button" class="logout-button">
-                        <i class="fas fa-sign-out-alt"></i> Logout
-                    </a>
-                </div>
-            </div>
-            
-            <div class="admin-section">
-                <h3>System Status Control</h3>
-                <p>Use these controls to simulate system downtime and recovery. When the system is offline, new orders will be queued. When bringing the system back online, queued orders will be processed automatically.</p>
-                
-                <div class="status-form">
-                    <button type="button" id="online-button" class="status-button online-button">
-                        <i class="fas fa-power-off"></i> Bring System Online
-                    </button>
-                    <button type="button" id="offline-button" class="status-button offline-button">
-                        <i class="fas fa-power-off"></i> Take System Offline
-                    </button>
-                </div>
-            </div>
-            
-            <div class="admin-section">
-                <h3>Queue Status</h3>
-                <div class="queue-info">
-                    <p>Current orders in queue:</p>
-                    <div id="queue-count" class="queue-count">0</div>
-                    <p id="queue-status-message" class="text-center">
-                        No orders are currently queued.
-                    </p>
-                </div>
-                
-                <!-- Database Backup Section -->
-                <h3>Database Backup</h3>
-                
-                <div class="backup-actions">
-                    <button id="export-button" class="export-button">
-                        <i class="fas fa-file-alt"></i> Export Orders to Text File
-                    </button>
-                    
-                    <a id="download-backup" href="#" download class="download-backup" style="display: none;">
-                        <i class="fas fa-download"></i> Download Latest Backup
-                    </a>
-                </div>
-                
-                <div id="last-backup" class="last-backup">
-                    No previous backup found.
-                </div>
-                
-                <!-- Import Form -->
-                <h3>Import Orders</h3>
-                <p>Use this form to import orders from a backup text file.</p>
-                
-                <div class="import-form">
-                    <div class="file-input-wrapper">
-                        <button class="file-input-button">
-                            <i class="fas fa-file-upload"></i> Choose File
-                        </button>
-                        <input type="file" id="import-file" accept=".txt" onchange="updateFileName(this)">
-                        <span class="file-name" id="file-name">No file chosen</span>
-                    </div>
-                    <button type="button" id="import-button" class="import-button">
-                        <i class="fas fa-file-import"></i> Import Orders
-                    </button>
-                </div>
-                
-                <div id="import-results" class="import-results" style="display: none;">
-                    <p id="import-message"></p>
-                </div>
-            </div>
-            
-            <div id="queued-orders-section" class="admin-section" style="display: none;">
-                <h3>Queued Orders</h3>
-                <table class="orders-table">
-                    <thead>
-                        <tr>
-                            <th>Order ID</th>
-                            <th>Customer</th>
-                            <th>Total</th>
-                            <th>Queued At</th>
-                            <th>Details</th>
-                        </tr>
-                    </thead>
-                    <tbody id="queued-orders-list">
-                        <!-- Queued orders will be loaded here -->
-                    </tbody>
-                </table>
-            </div>
-            
-            <div class="admin-section">
-                <h3>System Status History</h3>
-                <table class="history-table">
-                    <thead>
-                        <tr>
-                            <th>Action</th>
-                            <th>Performed By</th>
-                            <th>Timestamp</th>
-                        </tr>
-                    </thead>
-                    <tbody id="status-history">
-                        <!-- Status history will be loaded here -->
-                    </tbody>
-                </table>
-            </div>
-            
-            <div id="processing-results" class="admin-section" style="display: none;">
-                <h3>Processing Results</h3>
-                <div class="processing-results">
-                    <p><strong>Total orders processed:</strong> <span id="total-processed">0</span></p>
-                    <p><strong>Successfully processed:</strong> <span id="success-processed">0</span></p>
-                    <p><strong>Failed to process:</strong> <span id="failed-processed">0</span></p>
-                    
-                    <p id="failed-message" style="display: none;">Failed orders will need manual intervention. Please check the order processing logs.</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script src="js/config.js"></script>
-    <script src="js/jsonbin.js"></script>
-    <script src="js/admin.js"></script>
-</body>
-</html>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Order Queue Management - Seoul Grill 199</title>
-    <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-</head>
-<body>
-    <!-- Back Button -->
-    <div style="text-align: center; margin-top: 20px;">
-        <a href="index.html" class="back-button">
-            <i class="fas fa-arrow-left"></i> Back to Home
-        </a>
-    </div>
-
-    <div class="section-title">Order Queue Management</div>
-    
-    <div class="admin-container">
-        <div id="admin-login" class="admin-section">
-            <h3>Admin Login</h3>
-            <p>Please enter the admin password to access the queue management system.</p>
-            
-            <div class="login-form">
-                <div class="form-group">
-                    <label for="admin_password">Admin Password:</label>
-                    <input type="password" id="admin_password" required>
-                </div>
-                <button type="button" id="login-button" class="login-button">Login</button>
-            </div>
-        </div>
-        
-        <div id="admin-dashboard" style="display: none;">
-            <div class="admin-actions">
-                <h2 class="admin-title">Order Queue Management</h2>
-                <div>
-                    <span id="system-status" class="system-status"></span>
-                    <a href="#" id="logout-button" class="logout-button">
-                        <i class="fas fa-sign-out-alt"></i> Logout
-                    </a>
-                </div>
-            </div>
-            
-            <div class="admin-section">
-                <h3>System Status Control</h3>
-                <p>Use these controls to simulate system downtime and recovery. When the system is offline, new orders will be queued. When bringing the system back online, queued orders will be processed automatically.</p>
-                
-                <div class="status-form">
-                    <button type="button" id="online-button" class="status-button online-button">
-                        <i class="fas fa-power-off"></i> Bring System Online
-                    </button>
-                    <button type="button" id="offline-button" class="status-button offline-button">
-                        <i class="fas fa-power-off"></i> Take System Offline
-                    </button>
-                </div>
-            </div>
-            
-            <div class="admin-section">
-                <h3>Queue Status</h3>
-                <div class="queue-info">
-                    <p>Current orders in queue:</p>
-                    <div id="queue-count" class="queue-count">0</div>
-                    <p id="queue-status-message" class="text-center">
-                        No orders are currently queued.
-                    </p>
-                </div>
-                
-                <!-- Database Backup Section -->
-                <h3>Database Backup</h3>
-                
-                <div class="backup-actions">
-                    <button id="export-button" class="export-button">
-                        <i class="fas fa-file-alt"></i> Export Orders to Text File
-                    </button>
-                    
-                    <a id="download-backup" href="#" download class="download-backup" style="display: none;">
-                        <i class="fas fa-download"></i> Download Latest Backup
-                    </a>
-                </div>
-                
-                <div id="last-backup" class="last-backup">
-                    No previous backup found.
-                </div>
-                
-                <!-- Import Form -->
-                <h3>Import Orders</h3>
-                <p>Use this form to import orders from a backup text file.</p>
-                
-                <div class="import-form">
-                    <div class="file-input-wrapper">
-                        <button class="file-input-button">
-                            <i class="fas fa-file-upload"></i> Choose File
-                        </button>
-                        <input type="file" id="import-file" accept=".txt" onchange="updateFileName(this)">
-                        <span class="file-name" id="file-name">No file chosen</span>
-                    </div>
-                    <button type="button" id="import-button" class="import-button">
-                        <i class="fas fa-file-import"></i> Import Orders
-                    </button>
-                </div>
-                
-                <div id="import-results" class="import-results" style="display: none;">
-                    <p id="import-message"></p>
-                </div>
-            </div>
-            
-            <div id="queued-orders-section" class="admin-section" style="display: none;">
-                <h3>Queued Orders</h3>
-                <table class="orders-table">
-                    <thead>
-                        <tr>
-                            <th>Order ID</th>
-                            <th>Customer</th>
-                            <th>Total</th>
-                            <th>Queued At</th>
-                            <th>Details</th>
-                        </tr>
-                    </thead>
-                    <tbody id="queued-orders-list">
-                        <!-- Queued orders will be loaded here -->
-                    </tbody>
-                </table>
-            </div>
-            
-            <div class="admin-section">
-                <h3>System Status History</h3>
-                <table class="history-table">
-                    <thead>
-                        <tr>
-                            <th>Action</th>
-                            <th>Performed By</th>
-                            <th>Timestamp</th>
-                        </tr>
-                    </thead>
-                    <tbody id="status-history">
-                        <!-- Status history will be loaded here -->
-                    </tbody>
-                </table>
-            </div>
-            
-            <div id="processing-results" class="admin-section" style="display: none;">
-                <h3>Processing Results</h3>
-                <div class="processing-results">
-                    <p><strong>Total orders processed:</strong> <span id="total-processed">0</span></p>
-                    <p><strong>Successfully processed:</strong> <span id="success-processed">0</span></p>
-                    <p><strong>Failed to process:</strong> <span id="failed-processed">0</span></p>
-                    
-                    <p id="failed-message" style="display: none;">Failed orders will need manual intervention. Please check the order processing logs.</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script src="js/config.js"></script>
-    <script src="js/jsonbin.js"></script>
-    <script src="js/admin.js"></script>
-</body>
-</html>
