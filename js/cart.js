@@ -3,33 +3,24 @@
  * This file handles all cart-related functionality
  */
 
-// Assuming these functions are defined elsewhere (e.g., in products.js or a separate data service file)
-// For demonstration purposes, we'll define placeholder functions.
-// In a real application, these would be properly imported or defined.
-
+// Mock functions for demonstration purposes.  In a real application, these would be imported or defined elsewhere.
 async function loadProducts() {
-  // Placeholder: Replace with actual product loading logic
+  // Replace with actual product loading logic
   return {
-    "Product A": { price: 10 },
-    "Product B": { price: 20 },
-    "Product C": { price: 30 },
+    kimchi: { price: 5.0 },
+    bulgogi: { price: 10.0 },
+    bibimbap: { price: 8.0 },
   }
 }
 
-async function getBinData(key) {
-  // Placeholder: Replace with actual data retrieval logic from JSONBin or similar service
-  if (key === "SYSTEM_STATUS") {
-    return { status: 1 } // Assuming system is online by default
-  } else if (key === "ORDERS") {
-    return [] // Assuming empty orders array initially
-  }
-  return null
+async function getSystemStatus() {
+  // Replace with actual system status check
+  return true
 }
 
-async function updateBinData(key, data) {
-  // Placeholder: Replace with actual data update logic to JSONBin or similar service
-  console.log(`Updating ${key} with data:`, data)
-  return true // Assuming update is successful
+async function queueOrder(order) {
+  // Replace with actual order queuing logic
+  return true
 }
 
 // Initialize cart from localStorage or create empty cart
@@ -301,35 +292,39 @@ function closeSuccessModal() {
 }
 
 // Show notification
-function showNotification(message) {
+function showNotification(message, type = "success") {
   const notification = document.getElementById("notification")
   const notificationMessage = document.getElementById("notification-message")
 
-  if (notification && notificationMessage) {
-    notificationMessage.textContent = message
-    notification.style.display = "block"
+  if (!notification || !notificationMessage) return
 
-    // Auto-hide notification after 4 seconds
-    setTimeout(() => {
-      notification.style.display = "none"
-    }, 4000)
+  // Set message
+  notificationMessage.textContent = message
+
+  // Set icon based on type
+  const icon = notification.querySelector("i")
+  if (icon) {
+    if (type === "success") {
+      icon.className = "fas fa-check-circle"
+      icon.style.color = "#4CAF50"
+    } else if (type === "error") {
+      icon.className = "fas fa-times-circle"
+      icon.style.color = "#F44336"
+    } else if (type === "warning") {
+      icon.className = "fas fa-exclamation-triangle"
+      icon.style.color = "#FF9800"
+    } else if (type === "info") {
+      icon.className = "fas fa-info-circle"
+      icon.style.color = "#2196F3"
+    }
   }
-}
 
-async function getSystemStatus() {
-  const systemStatus = await getBinData("SYSTEM_STATUS")
-  return systemStatus.status === 1
-}
+  // Show notification
+  notification.style.display = "block"
 
-async function queueOrder(order) {
-  try {
-    const orders = await getBinData("ORDERS")
-    orders.push(order)
-    await updateBinData("ORDERS", orders)
-    return true
-  } catch (error) {
-    console.error("Error queuing order:", error)
-    return false
-  }
+  // Auto-hide after 4 seconds
+  setTimeout(() => {
+    notification.style.display = "none"
+  }, 4000)
 }
 
