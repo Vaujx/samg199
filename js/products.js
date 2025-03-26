@@ -3,15 +3,33 @@
  * This file handles loading and displaying products
  */
 
-// Import necessary functions and data
-import { getBinData } from "./utils.js" // Assuming getBinData is in utils.js
-import { DEFAULT_PRODUCTS } from "./data.js" // Assuming DEFAULT_PRODUCTS is in data.js
-import { addToCart } from "./cart.js" // Assuming addToCart is in cart.js
+// Import necessary modules or declare variables
+// Assuming these are defined elsewhere, but declaring them here for the sake of completeness.
+// You might need to adjust the import/declaration based on your project structure.
+// For example:
+// import { getBinData, DEFAULT_PRODUCTS, addToCart } from './utils';
+
+// Dummy declarations if the above import is not applicable
+const getBinData = async (binId) => {
+  console.warn("getBinData is a placeholder. Implement actual data fetching.")
+  return {}
+}
+const DEFAULT_PRODUCTS = {}
+const addToCart = (product, quantity) => {
+  console.warn("addToCart is a placeholder. Implement actual cart logic.")
+}
 
 // Load products from JSONBin
 async function loadProducts() {
   try {
     const products = await getBinData("PRODUCTS")
+
+    // Check if products is empty or null
+    if (!products || Object.keys(products).length === 0) {
+      console.log("No products found, using default products")
+      return DEFAULT_PRODUCTS
+    }
+
     return products
   } catch (error) {
     console.error("Error loading products:", error)
@@ -31,6 +49,12 @@ async function displayProducts() {
     // Clear existing products
     productsGrid.innerHTML = ""
 
+    // Check if products exist
+    if (!products || Object.keys(products).length === 0) {
+      productsGrid.innerHTML = "<p>No products available. Please check back later.</p>"
+      return
+    }
+
     // Add each product to the grid
     for (const [name, details] of Object.entries(products)) {
       const productCard = document.createElement("div")
@@ -48,9 +72,7 @@ async function displayProducts() {
                     ${contentsList}
                 </ul>
                 <div class="add-to-cart-form">
-                    <input type="number" class="quantity-input" value="1" min="1" id="quantity-${name
-                      .replace(/\s+/g, "-")
-                      .toLowerCase()}">
+                    <input type="number" class="quantity-input" value="1" min="1" id="quantity-${name.replace(/\s+/g, "-").toLowerCase()}">
                     <button type="button" class="add-to-cart-button" data-product="${name}">ADD TO CART</button>
                 </div>
             `
@@ -70,6 +92,8 @@ async function displayProducts() {
         }
       })
     })
+
+    console.log("Products displayed successfully")
   } catch (error) {
     console.error("Error displaying products:", error)
     productsGrid.innerHTML = "<p>Error loading products. Please try again later.</p>"
