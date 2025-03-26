@@ -5,14 +5,14 @@
 
 // Define CHAT_RESPONSES (or import it if it's in another file)
 const CHAT_RESPONSES = {
-  delivery: "Delivery usually takes 3-5 business days.",
-  payment: "We accept all major credit cards and PayPal.",
+  delivery: "Delivery typically takes 3-5 business days.",
+  payment: "We accept Visa, Mastercard, American Express, and PayPal.",
   hours: "Our operating hours are 9am to 5pm, Monday to Friday.",
   minimum: "There is no minimum order amount.",
-  dietary: "Yes, we have a variety of vegetarian options available.",
-  spicy: "You can specify your preferred spice level when ordering.",
-  cancel: "You can cancel your order within 1 hour of placing it.",
-  location: "We are located at 123 Main Street.",
+  dietary: "Yes, we offer a variety of vegetarian options. Please see our menu for details.",
+  spicy: "You can specify your desired spice level when placing your order.",
+  cancel: "To cancel your order, please contact us as soon as possible.",
+  location: "We are located at 123 Main Street, Anytown USA.",
 }
 
 // Toggle chat visibility
