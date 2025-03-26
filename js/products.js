@@ -3,37 +3,30 @@
  * This file handles loading and displaying products
  */
 
-// Import necessary modules or declare variables
-// Assuming these are defined elsewhere, but declaring them here for the sake of completeness.
-// You might need to adjust the import/declaration based on your project structure.
-// For example:
-// import { getBinData, DEFAULT_PRODUCTS, addToCart } from './utils';
-
-// Dummy declarations if the above import is not applicable
-const getBinData = async (binId) => {
-  console.warn("getBinData is a placeholder. Implement actual data fetching.")
-  return {}
-}
-const DEFAULT_PRODUCTS = {}
-const addToCart = (product, quantity) => {
-  console.warn("addToCart is a placeholder. Implement actual cart logic.")
-}
+// Assuming these are defined elsewhere, but declaring them here to resolve errors
+// In a real application, these would likely be imported or defined in a separate file
+let getBinData
+let DEFAULT_PRODUCTS
+let addToCart
 
 // Load products from JSONBin
 async function loadProducts() {
   try {
+    console.log("Loading products from JSONBin...")
     const products = await getBinData("PRODUCTS")
 
     // Check if products is empty or null
     if (!products || Object.keys(products).length === 0) {
-      console.log("No products found, using default products")
+      console.log("No products found in JSONBin, using default products")
       return DEFAULT_PRODUCTS
     }
 
+    console.log("Products loaded successfully:", products)
     return products
   } catch (error) {
     console.error("Error loading products:", error)
     // Fallback to default products if there's an error
+    console.log("Falling back to default products")
     return DEFAULT_PRODUCTS
   }
 }
@@ -41,12 +34,19 @@ async function loadProducts() {
 // Display products on the page
 async function displayProducts() {
   const productsGrid = document.getElementById("products-grid")
-  if (!productsGrid) return
+  if (!productsGrid) {
+    console.error("Products grid element not found")
+    return
+  }
 
   try {
+    // Clear existing products
+    productsGrid.innerHTML = '<div class="loading-indicator">Loading products...</div>'
+
+    // Load products
     const products = await loadProducts()
 
-    // Clear existing products
+    // Clear loading indicator
     productsGrid.innerHTML = ""
 
     // Check if products exist
@@ -54,6 +54,8 @@ async function displayProducts() {
       productsGrid.innerHTML = "<p>No products available. Please check back later.</p>"
       return
     }
+
+    console.log("Displaying products:", Object.keys(products))
 
     // Add each product to the grid
     for (const [name, details] of Object.entries(products)) {
