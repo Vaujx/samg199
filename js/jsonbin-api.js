@@ -3,13 +3,14 @@
  * This file handles all interactions with the JSONBin.io API
  */
 
-// Define CONFIG and default data
+// Configuration object (replace with your actual configuration)
 const CONFIG = {
-  JSONBIN_URL: "https://api.jsonbin.io/v3/b",
-  MASTER_KEY: "$2b$10$ZfKJO7VE/w9vGqKdyE8Lu.yZIY93Kz5/i3j4Vz9/45s.m2x.0P.Wq", // Replace with your actual master key
+  JSONBIN_URL: "https://api.jsonbin.io/v3/b", // Replace with your JSONBin.io API endpoint
+  MASTER_KEY: "$2b$10$ZzQ51e9kXj1.waq9vJv.EO2sX1.Z.Q.9.Z.Q.9.Z.Q.9", // Replace with your master key
   BINS: {},
 }
 
+// Default data (replace with your actual default data)
 const DEFAULT_PRODUCTS = []
 const DEFAULT_ORDERS = []
 const DEFAULT_SYSTEM_STATUS = { status: 1, updated_by: "system", updated_at: new Date().toISOString() }
