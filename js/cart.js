@@ -3,24 +3,29 @@
  * This file handles all cart-related functionality
  */
 
-// Mock functions for demonstration purposes.  In a real application, these would be imported or defined elsewhere.
+// Mock implementations (replace with actual imports/definitions)
+function showNotification(message) {
+  alert(message) // Replace with your actual notification implementation
+}
+
 async function loadProducts() {
-  // Replace with actual product loading logic
+  // Replace with your actual product loading logic
   return {
-    kimchi: { price: 5.0 },
-    bulgogi: { price: 10.0 },
-    bibimbap: { price: 8.0 },
+    "Kimchi Fried Rice": { price: 12.99 },
+    Bulgogi: { price: 15.99 },
+    Bibimbap: { price: 13.99 },
   }
 }
 
 async function getSystemStatus() {
-  // Replace with actual system status check
-  return true
+  // Replace with your actual system status check
+  return true // Assume system is online for now
 }
 
 async function queueOrder(order) {
-  // Replace with actual order queuing logic
-  return true
+  // Replace with your actual order queuing logic
+  console.log("Order queued:", order)
+  return true // Assume order queuing is successful for now
 }
 
 // Initialize cart from localStorage or create empty cart
@@ -36,6 +41,7 @@ function saveCart(cart) {
 
 // Add item to cart
 function addToCart(product, quantity) {
+  console.log(`Adding to cart: ${product} x ${quantity}`)
   const cart = initializeCart()
 
   // Add or update quantity
@@ -53,6 +59,7 @@ function addToCart(product, quantity) {
 
 // Remove item from cart
 function removeFromCart(product) {
+  console.log(`Removing from cart: ${product}`)
   const cart = initializeCart()
 
   // Remove product from cart
@@ -67,6 +74,7 @@ function removeFromCart(product) {
 
 // Update cart quantities
 function updateCart() {
+  console.log("Updating cart quantities")
   const cart = initializeCart()
   const quantityInputs = document.querySelectorAll(".cart-quantity-input")
 
@@ -289,42 +297,5 @@ function closeSuccessModal() {
   document.getElementById("successModal").style.display = "none"
   // Refresh the page to update cart display
   window.location.reload()
-}
-
-// Show notification
-function showNotification(message, type = "success") {
-  const notification = document.getElementById("notification")
-  const notificationMessage = document.getElementById("notification-message")
-
-  if (!notification || !notificationMessage) return
-
-  // Set message
-  notificationMessage.textContent = message
-
-  // Set icon based on type
-  const icon = notification.querySelector("i")
-  if (icon) {
-    if (type === "success") {
-      icon.className = "fas fa-check-circle"
-      icon.style.color = "#4CAF50"
-    } else if (type === "error") {
-      icon.className = "fas fa-times-circle"
-      icon.style.color = "#F44336"
-    } else if (type === "warning") {
-      icon.className = "fas fa-exclamation-triangle"
-      icon.style.color = "#FF9800"
-    } else if (type === "info") {
-      icon.className = "fas fa-info-circle"
-      icon.style.color = "#2196F3"
-    }
-  }
-
-  // Show notification
-  notification.style.display = "block"
-
-  // Auto-hide after 4 seconds
-  setTimeout(() => {
-    notification.style.display = "none"
-  }, 4000)
 }
 
