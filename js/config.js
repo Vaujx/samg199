@@ -10,10 +10,10 @@ const CONFIG = {
   X_ACCESS_KEY: "$2a$10$V5G6G/GoKByB9rHsvU2bRupT.5uqU15DTZBXguWdHdrkTYi/ljsQG",
   // Bin IDs for different data types
   BINS: {
-    PRODUCTS: "", // Will be created on first load
-    ORDERS: "", // Will be created on first load
-    SYSTEM_STATUS: "", // Will be created on first load
-    SYSTEM_LOG: "", // Will be created on first load
+    PRODUCTS: "67e532ea8561e97a50f3dbe0 ", // Will be created on first load
+    ORDERS: "67e533df8960c979a5797068 ", // Will be created on first load
+    SYSTEM_STATUS: "67e533868a456b79667da817 ", // Will be created on first load
+    SYSTEM_LOG: "67e5346a8960c979a57970fb ", // Will be created on first load
   },
   // Default admin password
   ADMIN_PASSWORD: "admin123",
