@@ -3,12 +3,6 @@
  * This file handles loading and displaying products
  */
 
-// Assuming these are defined elsewhere, but declaring them here to resolve errors
-// In a real application, these would likely be imported or defined in a separate file.
-let getBinData
-const DEFAULT_PRODUCTS = {}
-let addToCart
-
 // Load products from JSONBin
 async function loadProducts() {
   try {
@@ -68,8 +62,14 @@ async function displayProducts() {
         contentsList += `<li>${item}</li>`
       })
 
+      // Create image element with error handling
+      const imageUrl = details.image || 'images/placeholder.jpg';
+
       productCard.innerHTML = `
                 <h3>${name} - ₱${details.price.toFixed(2)}</h3>
+                <div class="product-image">
+                    <img src="${imageUrl}" alt="${name}" onerror="this.src='images/placeholder.jpg'; this.onerror=null;">
+                </div>
                 <ul class="product-contents">
                     ${contentsList}
                 </ul>
@@ -102,3 +102,122 @@ async function displayProducts() {
   }
 }
 
+// Add a new product (admin function)
+async function addProduct(name, price, contents, imageUrl) {
+    try {
+        // Validate inputs
+        if (!name || !price || !contents || !Array.isArray(contents) || contents.length === 0) {
+            throw new Error('Invalid product data');
+        }
+        
+        // Load existing products
+        const products = await loadProducts();
+        
+        // Check if product already exists
+        if (products[name]) {
+            throw new Error(`Product "${name}" already exists`);
+        }
+        
+        // Add new product
+        products[name] = {
+            price: parseFloat(price),
+            contents: contents,
+            image: imageUrl || 'images/placeholder.jpg'
+        };
+        
+        // Update products in JSONBin
+        await updateBinData('PRODUCTS', products);
+        
+        // Log product addition
+        const systemLog = await getBinData('SYSTEM_LOG');
+        systemLog.push({
+            action: 'product_added',
+            description: `Product "${name}" added`,
+            performed_by: 'admin',
+            performed_at: new Date().toISOString()
+        });
+        await updateBinData('SYSTEM_LOG', systemLog);
+        
+        return true;
+    } catch (error) {
+        console.error('Error adding product:', error);
+        return false;
+    }
+}
+
+// Update an existing product (admin function)
+async function updateProduct(name, price, contents, imageUrl) {
+    try {
+        // Validate inputs
+        if (!name || !price || !contents || !Array.isArray(contents) || contents.length === 0) {
+            throw new Error('Invalid product data');
+        }
+        
+        // Load existing products
+        const products = await loadProducts();
+        
+        // Check if product exists
+        if (!products[name]) {
+            throw new Error(`Product "${name}" not found`);
+        }
+        
+        // Update product
+        products[name] = {
+            price: parseFloat(price),
+            contents: contents,
+            image: imageUrl || products[name].image || 'images/placeholder.jpg'
+        };
+        
+        // Update products in JSONBin
+        await updateBinData('PRODUCTS', products);
+        
+        // Log product update
+        const systemLog = await getBinData('SYSTEM_LOG');
+        systemLog.push({
+            action: 'product_updated',
+            description: `Product "${name}" updated`,
+            performed_by: 'admin',
+            performed_at: new Date().toISOString()
+        });
+        await updateBinData('SYSTEM_LOG', systemLog);
+        
+        return true;
+    } catch (error) {
+        console.error('Error updating product:', error);
+        return false;
+    }
+}
+
+// Delete a product (admin function)
+async function deleteProduct(name) {
+    try {
+        // Load existing products
+        const products = await loadProducts();
+        
+        // Check if product exists
+        if (!products[name]) {
+            throw new Error(`Product "${name}" not found`);
+        }
+        
+        // Delete product
+        delete products[name];
+        
+        // Update products in JSONBin
+        await updateBinData('PRODUCTS', products);
+        
+        // Log product deletion
+        const systemLog = await getBinData('SYSTEM_LOG');
+        systemLog.push({
+            action: 'product_deleted',
+            description: `Product "${name}" deleted`,
+            performed_by: 'admin',
+            performed_at: new Date().toISOString()
+        });
+        await updateBinData('SYSTEM_LOG', systemLog);
+        
+        return true;
+    } catch (error) {
+        console.error('Error deleting product:', error);
+        return false;
+    }
+}
