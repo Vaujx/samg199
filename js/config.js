@@ -9,19 +9,19 @@ const CONFIG = {
     JSONBIN_URL: "https://api.jsonbin.io/v3/b",
     MASTER_KEY: "$2a$10$qrZ9tpKi.ajyrHn7A.dMbeABtgoW6dnb6aVVQWDxBjhfPNSw9skEC",
     X_ACCESS_KEY: "$2a$10$Fo4DZvMjTCYvNe2qeN1Y8eDIRR2nfwizqPVLDM.llf07CA4DpOgZa",
-    // Bin IDs for different data types
+    // Fixed bin IDs - replace these with your actual bin IDs after creating them once
     BINS: {
-        PRODUCTS: "", // Will be created on first load
-        ORDERS: "", // Will be created on first load
-        SYSTEM_STATUS: "", // Will be created on first load
-        SYSTEM_LOG: "", // Will be created on first load
+        PRODUCTS: "65f9a1c0266cfc3fde8f8e9a", // Replace with your actual bin ID
+        ORDERS: "65f9a1c0266cfc3fde8f8e9b", // Replace with your actual bin ID
+        SYSTEM_STATUS: "65f9a1c0266cfc3fde8f8e9c", // Replace with your actual bin ID
+        SYSTEM_LOG: "65f9a1c0266cfc3fde8f8e9d", // Replace with your actual bin ID
     },
     // Default admin password
     ADMIN_PASSWORD: "admin123",
     // Version number for cache busting
     VERSION: "1.0.0",
-    // Auto-initialize on GitHub Pages
-    AUTO_INIT: true
+    // Disable auto-initialization since we're using fixed bin IDs
+    AUTO_INIT: false
 };
 
 // Default products data
