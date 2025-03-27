@@ -3,13 +3,14 @@
  * This file handles all cart-related functionality
  */
 
-// Mock implementations (replace with actual imports/definitions)
-function showNotification(message) {
-  alert(message) // Replace with your actual notification implementation
+// Import necessary modules (assuming these are defined elsewhere)
+// For demonstration purposes, let's define them as placeholder functions
+async function showNotification(message, type = "info") {
+  console.log(`Notification: ${message} (Type: ${type})`)
 }
 
 async function loadProducts() {
-  // Replace with your actual product loading logic
+  // Simulate loading products from a data source
   return {
     "Kimchi Fried Rice": { price: 12.99 },
     Bulgogi: { price: 15.99 },
@@ -18,14 +19,14 @@ async function loadProducts() {
 }
 
 async function getSystemStatus() {
-  // Replace with your actual system status check
-  return true // Assume system is online for now
+  // Simulate checking system status
+  return true // Or false, depending on the simulated status
 }
 
 async function queueOrder(order) {
-  // Replace with your actual order queuing logic
+  // Simulate queuing an order
   console.log("Order queued:", order)
-  return true // Assume order queuing is successful for now
+  return true // Or false, depending on the simulated success
 }
 
 // Initialize cart from localStorage or create empty cart
@@ -191,7 +192,7 @@ async function processPayment() {
 
   // Check if cart is empty
   if (Object.keys(cart).length === 0) {
-    showNotification("Your cart is empty!")
+    showNotification("Your cart is empty!", "error")
     closeCheckoutModal()
     return
   }
@@ -241,12 +242,12 @@ async function processPayment() {
 
       document.getElementById("successModal").style.display = "block"
     } else {
-      showNotification("There was an error processing your order. Please try again later.")
+      showNotification("There was an error processing your order. Please try again later.", "error")
       closeCheckoutModal()
     }
   } catch (error) {
     console.error("Error processing payment:", error)
-    showNotification("There was an error processing your order. Please try again later.")
+    showNotification("There was an error processing your order. Please try again later.", "error")
     closeCheckoutModal()
   }
 }
@@ -262,7 +263,7 @@ async function openCheckoutModal() {
 
   // Check if cart is empty
   if (Object.keys(cart).length === 0) {
-    showNotification("Your cart is empty!")
+    showNotification("Your cart is empty!", "warning")
     return
   }
 
