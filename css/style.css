@@ -30,12 +30,10 @@ body {
 /* Section Title */
 .section-title {
     text-align: center;
-    font-size: 3rem;
-    color: #ff0033;
+    font-size: 2.5rem;
+    color: rgb(206, 28, 28);
     font-weight: bold;
-    margin-bottom: 30px;
-    text-transform: uppercase;
-    letter-spacing: 2px;
+    margin-bottom: 20px;
     padding-top: 20px;
 }
 
@@ -52,11 +50,13 @@ body {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 20px;
-    margin: 0 20px 30px 20px;
+    margin-bottom: 30px;
 }
 
 /* Product Cards */
 .product-card {
+    background-color: #4682B4;
+    background-image: url('images/FamilysetA.jpg');
     background-size: cover;
     background-position: center;
     border-radius: 15px;
@@ -72,7 +72,6 @@ body {
     overflow: hidden;
 }
 
-/* Product card background overlay */
 .product-card::before {
     content: "";
     position: absolute;
@@ -82,16 +81,6 @@ body {
     height: 100%;
     background: rgba(0, 0, 0, 0.4);
     z-index: 1;
-}
-
-/* Set A, B, C cards */
-.product-card.set-a, .product-card.set-b, .product-card.set-c {
-    background-image: url('images/korean-bbq-background.jpg');
-}
-
-/* Test item card */
-.product-card.test-item {
-    background-color: #8B4513;
 }
 
 .product-card h3 {
@@ -140,6 +129,27 @@ body {
     color: black;
 }
 
+.add-to-cart-button {
+    background-color: #ff6347;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    font-size: 1.1rem;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: background-color 0.3s ease;
+    width: 100%;
+    max-width: 200px;
+    text-transform: uppercase;
+    font-weight: bold;
+}
+
+.add-to-cart-button:hover {
+    background-color: #ff4500;
+}
+
+/* Rest of your CSS remains the same */
 .add-to-cart-button {
     background-color: #ff6347;
     color: white;
