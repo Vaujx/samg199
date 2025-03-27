@@ -7,7 +7,7 @@
 const CONFIG = {
   JSONBIN_URL: "https://api.jsonbin.io/v3/b",
   MASTER_KEY: "$2a$10$qrZ9tpKi.ajyrHn7A.dMbeABtgoW6dnb6aVVQWDxBjhfPNSw9skEC",
-  X_ACCESS_KEY: "$2a$10$V5G6G/GoKByB9rHsvU2bRupT.5uqU15DTZBXguWdHdrkTYi/ljsQG",
+  X_ACCESS_KEY: "$2a$10$Fo4DZvMjTCYvNe2qeN1Y8eDIRR2nfwizqPVLDM.llf07CA4DpOgZa",
   // Bin IDs for different data types
   BINS: {
     PRODUCTS: "", // Will be created on first load
