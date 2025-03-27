@@ -4,9 +4,9 @@
  */
 
 // Assuming these are defined elsewhere, but declaring them here to resolve errors
-// In a real application, these would likely be imported or defined in a separate file
+// In a real application, these would likely be imported or defined in a separate file.
 let getBinData
-let DEFAULT_PRODUCTS
+const DEFAULT_PRODUCTS = {}
 let addToCart
 
 // Load products from JSONBin
