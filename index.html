@@ -1,182 +1,182 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-   <meta charset="UTF-8">
-   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-   <title>Seoul Grill 199</title>
-   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-   <link rel="stylesheet" href="css/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Seoul Grill 199</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-   <!-- Header -->
-   <div class="header">
-       <img src="images/background1.png" alt="Seoul Grill 199" class="header-logo">
-       <h1 class="header-text">Welcome!</h1>
-   </div>
+  <!-- Header -->
+  <div class="header">
+      <img src="images/background1.png" alt="Seoul Grill 199" class="header-logo">
+      <h1 class="header-text">Welcome!</h1>
+  </div>
 
-   <div id="notification" class="notification" style="display: none;">
-       <i class="fas fa-check-circle"></i> <span id="notification-message"></span>
-       <span class="close-notification" onclick="document.getElementById('notification').style.display='none'">&times;</span>
-   </div>
-   
-   <!-- System Status Indicator -->
-   <div id="system-status-indicator" class="system-status-indicator">
-       <span id="status-dot" class="status-dot"></span>
-       <span id="status-text"></span>
-   </div>
-   
-   <!-- Admin Link -->
-   <a href="admin-queue.html" class="admin-link">
-       <i class="fas fa-cog"></i> Queue Management
-   </a>
-   
-   <div id="maintenance-notice" class="container" style="display: none;">
-       <div class="queue-notification">
-           <i class="fas fa-exclamation-triangle"></i>
-           <strong>System Maintenance Notice:</strong> Our ordering system is currently undergoing maintenance. 
-           You can still place orders, which will be queued and processed as soon as the system is back online.
-       </div>
-   </div>
+  <div id="notification" class="notification" style="display: none;">
+      <i class="fas fa-check-circle"></i> <span id="notification-message"></span>
+      <span class="close-notification" onclick="document.getElementById('notification').style.display='none'">&times;</span>
+  </div>
+  
+  <!-- System Status Indicator -->
+  <div id="system-status-indicator" class="system-status-indicator">
+      <span id="status-dot" class="status-dot"></span>
+      <span id="status-text"></span>
+  </div>
+  
+  <!-- Admin Link -->
+  <a href="admin-queue.html" class="admin-link">
+      <i class="fas fa-cog"></i> Queue Management
+  </a>
+  
+  <div id="maintenance-notice" class="container" style="display: none;">
+      <div class="queue-notification">
+          <i class="fas fa-exclamation-triangle"></i>
+          <strong>System Maintenance Notice:</strong> Our ordering system is currently undergoing maintenance. 
+          You can still place orders, which will be queued and processed as soon as the system is back online.
+      </div>
+  </div>
 
-   <!-- Menu Section -->
-   <div class="section-title">Rules and Menu</div>
-   <div class="section-content">
-       <div class="menu-images">
-           <p><img src="images/menu.jpg" alt="Menu 1" class="zoomable" onclick="openModal(this.src)"></p>
-           <p><img src="images/menu2.jpg" alt="Menu 2" class="zoomable" onclick="openModal(this.src)"></p>
-       </div>
-   </div>
+  <!-- Menu Section -->
+  <div class="section-title">Rules and Menu</div>
+  <div class="section-content">
+      <div class="menu-images">
+          <p><img src="images/menu.jpg" alt="Menu 1" class="zoomable" onclick="openModal(this.src)"></p>
+          <p><img src="images/menu2.jpg" alt="Menu 2" class="zoomable" onclick="openModal(this.src)"></p>
+      </div>
+  </div>
 
-   <div class="container">
-       <h2 class="menu-title">FAMILY SETS</h2>
+  <div class="container">
+      <h2 class="menu-title">FAMILY SETS</h2>
 
-       <div id="products-grid" class="products-grid">
-           <!-- Products will be loaded here via JavaScript -->
-           <div class="loading-indicator">Loading products...</div>
-       </div>
+      <div id="products-grid" class="products-grid">
+          <!-- Products will be loaded here via JavaScript -->
+          <div class="loading-indicator">Loading products...</div>
+      </div>
 
-       <div id="cart-container" class="cart-container" style="display: none;">
-           <h3>Shopping Cart</h3>
-           <div class="table-responsive">
-               <table class="cart-table">
-                   <thead>
-                       <tr>
-                           <th>Product</th>
-                           <th>Quantity</th>
-                           <th>Price</th>
-                           <th>Action</th>
-                       </tr>
-                   </thead>
-                   <tbody id="cart-items">
-                       <!-- Cart items will be loaded here via JavaScript -->
-                   </tbody>
-               </table>
-           </div>
-           <div class="cart-buttons">
-               <button type="button" id="update-cart-button" class="update-cart-button">Update Cart</button>
-               <button type="button" id="checkout-button" class="checkout-button">Proceed to Checkout</button>
-           </div>
-       </div>
+      <div id="cart-container" class="cart-container" style="display: none;">
+          <h3>Shopping Cart</h3>
+          <div class="table-responsive">
+              <table class="cart-table">
+                  <thead>
+                      <tr>
+                          <th>Product</th>
+                          <th>Quantity</th>
+                          <th>Price</th>
+                          <th>Action</th>
+                      </tr>
+                  </thead>
+                  <tbody id="cart-items">
+                      <!-- Cart items will be loaded here via JavaScript -->
+                  </tbody>
+              </table>
+          </div>
+          <div class="cart-buttons">
+              <button type="button" id="update-cart-button" class="update-cart-button">Update Cart</button>
+              <button type="button" id="checkout-button" class="checkout-button">Proceed to Checkout</button>
+          </div>
+      </div>
 
-       <!-- Chat Toggle Button -->
-       <div class="chat-toggle" onclick="toggleChat()">
-           <i class="fas fa-comment-dots"></i>
-       </div>
+      <!-- Chat Toggle Button -->
+      <div class="chat-toggle" onclick="toggleChat()">
+          <i class="fas fa-comment-dots"></i>
+      </div>
 
-       <!-- Chat Container -->
-       <div id="chatContainer" class="chat-container">
-           <div class="chat-header">
-               <h3><i class="fas fa-robot"></i> Seoul Grill 199 Assistant</h3>
-               <button class="close-chat" onclick="toggleChat()">×</button>
-           </div>
-           <div class="chat-body" id="chatBody">
-               <div class="chat-message bot-message">
-                   Hello! I'm your Seoul Grill 199 virtual assistant. How can I help you today?
-               </div>
-               
-               <div id="chatMessages"></div>
-           </div>
-           
-           <div class="question-buttons">
-               <button type="button" class="question-button" onclick="askQuestion('delivery')">How long does delivery take?</button>
-               <button type="button" class="question-button" onclick="askQuestion('payment')">What payment methods do you accept?</button>
-               <button type="button" class="question-button" onclick="askQuestion('hours')">What are your operating hours?</button>
-               <button type="button" class="question-button" onclick="askQuestion('minimum')">Is there a minimum order amount?</button>
-               <button type="button" class="question-button" onclick="askQuestion('dietary')">Do you offer vegetarian options?</button>
-               <button type="button" class="question-button" onclick="askQuestion('spicy')">Can I adjust the spice level?</button>
-               <button type="button" class="question-button" onclick="askQuestion('cancel')">How do I cancel my order?</button>
-               <button type="button" class="question-button" onclick="askQuestion('location')">Where are you located?</button>
-           </div>
-       </div>
-   </div>
+      <!-- Chat Container -->
+      <div id="chatContainer" class="chat-container">
+          <div class="chat-header">
+              <h3><i class="fas fa-robot"></i> Seoul Grill 199 Assistant</h3>
+              <button class="close-chat" onclick="toggleChat()">×</button>
+          </div>
+          <div class="chat-body" id="chatBody">
+              <div class="chat-message bot-message">
+                  Hello! I'm your Seoul Grill 199 virtual assistant. How can I help you today?
+              </div>
+              
+              <div id="chatMessages"></div>
+          </div>
+          
+          <div class="question-buttons">
+              <button type="button" class="question-button" onclick="askQuestion('delivery')">How long does delivery take?</button>
+              <button type="button" class="question-button" onclick="askQuestion('payment')">What payment methods do you accept?</button>
+              <button type="button" class="question-button" onclick="askQuestion('hours')">What are your operating hours?</button>
+              <button type="button" class="question-button" onclick="askQuestion('minimum')">Is there a minimum order amount?</button>
+              <button type="button" class="question-button" onclick="askQuestion('dietary')">Do you offer vegetarian options?</button>
+              <button type="button" class="question-button" onclick="askQuestion('spicy')">Can I adjust the spice level?</button>
+              <button type="button" class="question-button" onclick="askQuestion('cancel')">How do I cancel my order?</button>
+              <button type="button" class="question-button" onclick="askQuestion('location')">Where are you located?</button>
+          </div>
+      </div>
+  </div>
 
-   <!-- Checkout Modal -->
-   <div id="checkoutModal" class="checkout-modal">
-       <div class="checkout-modal-content">
-           <span class="checkout-modal-close" onclick="closeCheckoutModal()">&times;</span>
-           <h2 class="checkout-modal-title">Checkout</h2>
-           <div id="checkout-maintenance-notice" class="queue-notification" style="display: none; margin-bottom: 15px;">
-               <i class="fas fa-info-circle"></i> System is currently under maintenance. Your order will be queued and processed as soon as possible.
-           </div>
-           <p>Please confirm your order:</p>
-           <div id="checkout-total" class="checkout-modal-total">₱0.00</div>
-           <div class="checkout-modal-buttons">
-               <button class="checkout-modal-button checkout-modal-cancel" onclick="closeCheckoutModal()">Cancel</button>
-               <button class="checkout-modal-button checkout-modal-pay" onclick="processPayment()">
-                   <span id="checkout-button-text">Pay Now</span>
-               </button>
-           </div>
-       </div>
-   </div>
+  <!-- Checkout Modal -->
+  <div id="checkoutModal" class="checkout-modal">
+      <div class="checkout-modal-content">
+          <span class="checkout-modal-close" onclick="closeCheckoutModal()">&times;</span>
+          <h2 class="checkout-modal-title">Checkout</h2>
+          <div id="checkout-maintenance-notice" class="queue-notification" style="display: none; margin-bottom: 15px;">
+              <i class="fas fa-info-circle"></i> System is currently under maintenance. Your order will be queued and processed as soon as possible.
+          </div>
+          <p>Please confirm your order:</p>
+          <div id="checkout-total" class="checkout-modal-total">₱0.00</div>
+          <div class="checkout-modal-buttons">
+              <button class="checkout-modal-button checkout-modal-cancel" onclick="closeCheckoutModal()">Cancel</button>
+              <button class="checkout-modal-button checkout-modal-pay" onclick="processPayment()">
+                  <span id="checkout-button-text">Pay Now</span>
+              </button>
+          </div>
+      </div>
+  </div>
 
-   <!-- Success Modal -->
-   <div id="successModal" class="success-modal">
-       <div class="success-modal-content">
-           <i class="fas fa-check-circle success-icon"></i>
-           <h2 id="success-title" class="success-title">Payment Successful!</h2>
-           <p id="success-message" class="success-message">
-               Thank you for your order. Your delivery will arrive shortly.
-           </p>
-           <button class="success-button" onclick="closeSuccessModal()">Continue</button>
-       </div>
-   </div>
+  <!-- Success Modal -->
+  <div id="successModal" class="success-modal">
+      <div class="success-modal-content">
+          <i class="fas fa-check-circle success-icon"></i>
+          <h2 id="success-title" class="success-title">Payment Successful!</h2>
+          <p id="success-message" class="success-message">
+              Thank you for your order. Your delivery will arrive shortly.
+          </p>
+          <button class="success-button" onclick="closeSuccessModal()">Continue</button>
+      </div>
+  </div>
 
-   <!-- Footer -->
-   <footer class="site-footer">
-       <div class="footer-content">
-           <div class="footer-section">
-               <h3>Contact Us</h3>
-               <p>Phone: 0910-392-6577</p>
-               <p>Email: info@seoulgrill199.com</p>
-           </div>
-           <div class="footer-section">
-               <h3>Quick Links</h3>
-               <ul>
-                   <li><button class="btn"><a href="index.html">Home</a></button></li>
-                   <li><button class="btn"><a href="about.html">About Us</a></button></li>
-               </ul>
-           </div>
-           <div class="footer-section">
-               <h3>Follow Us</h3>
-               <div class="social-links">
-                   <a href="https://web.facebook.com/profile.php?id=100092652071507" target="_blank"><img src="images/facebook-icon.png" alt="Facebook"></a>&nbsp;&nbsp;
-                   <a href="#" target="_blank"><img src="images/instagram-icon.png" alt="Instagram"></a>&nbsp;&nbsp;
-                   <a href="#" target="_blank"><img src="images/twitter-icon.png" alt="Twitter"></a>
-               </div>
-           </div>
-       </div>
-       <div class="footer-bottom">
-           <p>&copy; <span id="current-year"></span> Seoul Grill 199 Online Ordering. All rights reserved.</p>
-       </div>
-   </footer>
+  <!-- Footer -->
+  <footer class="site-footer">
+      <div class="footer-content">
+          <div class="footer-section">
+              <h3>Contact Us</h3>
+              <p>Phone: 0910-392-6577</p>
+              <p>Email: info@seoulgrill199.com</p>
+          </div>
+          <div class="footer-section">
+              <h3>Quick Links</h3>
+              <ul>
+                  <li><button class="btn"><a href="index.html">Home</a></button></li>
+                  <li><button class="btn"><a href="about.html">About Us</a></button></li>
+              </ul>
+          </div>
+          <div class="footer-section">
+              <h3>Follow Us</h3>
+              <div class="social-links">
+                  <a href="https://web.facebook.com/profile.php?id=100092652071507" target="_blank"><img src="images/facebook-icon.png" alt="Facebook"></a>&nbsp;&nbsp;
+                  <a href="#" target="_blank"><img src="images/instagram-icon.png" alt="Instagram"></a>&nbsp;&nbsp;
+                  <a href="#" target="_blank"><img src="images/twitter-icon.png" alt="Twitter"></a>
+              </div>
+          </div>
+      </div>
+      <div class="footer-bottom">
+          <p>&copy; <span id="current-year"></span> Seoul Grill 199 Online Ordering. All rights reserved.</p>
+      </div>
+  </footer>
 
-   <script src="js/config.js"></script>
-   <script src="js/utils.js"></script>
-   <script src="js/jsonbin-api.js"></script>
-   <script src="js/products.js"></script>
-   <script src="js/cart.js"></script>
-   <script src="js/chat.js"></script>
-   <script src="js/main.js"></script>
+  <!-- Load scripts in the correct order -->
+  <script src="js/config.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/jsonbin-api.js"></script>
+  <script src="js/products.js"></script>
+  <script src="js/cart.js"></script>
+  <script src="js/chat.js"></script>
+  <script src="js/main.js"></script>
 </body>
 </html>
-
