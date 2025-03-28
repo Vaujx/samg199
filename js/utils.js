@@ -3,6 +3,46 @@
 * This file contains utility functions used throughout the application
 */
 
+// Show notification
+function showNotification(message, type = "success") {
+   const notification = document.getElementById("notification");
+   const notificationMessage = document.getElementById("notification-message");
+
+   if (!notification || !notificationMessage) {
+       console.log(`Notification: ${message} (Type: ${type})`);
+       return;
+   }
+
+   // Set message
+   notificationMessage.textContent = message;
+
+   // Set icon based on type
+   const icon = notification.querySelector("i");
+   if (icon) {
+       if (type === "success") {
+           icon.className = "fas fa-check-circle";
+           icon.style.color = "#4CAF50";
+       } else if (type === "error") {
+           icon.className = "fas fa-times-circle";
+           icon.style.color = "#F44336";
+       } else if (type === "warning") {
+           icon.className = "fas fa-exclamation-triangle";
+           icon.style.color = "#FF9800";
+       } else if (type === "info") {
+           icon.className = "fas fa-info-circle";
+           icon.style.color = "#2196F3";
+       }
+   }
+
+   // Show notification
+   notification.style.display = "block";
+
+   // Auto-hide after 4 seconds
+   setTimeout(() => {
+       notification.style.display = "none";
+   }, 4000);
+}
+
 // Format currency
 function formatCurrency(amount) {
    return "₱" + Number.parseFloat(amount).toFixed(2);
@@ -46,46 +86,6 @@ function getUrlParams() {
    }
 
    return params;
-}
-
-// Show notification
-function showNotification(message, type = "success") {
-   const notification = document.getElementById("notification");
-   const notificationMessage = document.getElementById("notification-message");
-
-   if (!notification || !notificationMessage) {
-       console.log(`Notification: ${message} (Type: ${type})`);
-       return;
-   }
-
-   // Set message
-   notificationMessage.textContent = message;
-
-   // Set icon based on type
-   const icon = notification.querySelector("i");
-   if (icon) {
-       if (type === "success") {
-           icon.className = "fas fa-check-circle";
-           icon.style.color = "#4CAF50";
-       } else if (type === "error") {
-           icon.className = "fas fa-times-circle";
-           icon.style.color = "#F44336";
-       } else if (type === "warning") {
-           icon.className = "fas fa-exclamation-triangle";
-           icon.style.color = "#FF9800";
-       } else if (type === "info") {
-           icon.className = "fas fa-info-circle";
-           icon.style.color = "#2196F3";
-       }
-   }
-
-   // Show notification
-   notification.style.display = "block";
-
-   // Auto-hide after 4 seconds
-   setTimeout(() => {
-       notification.style.display = "none";
-   }, 4000);
 }
 
 // Validate email
