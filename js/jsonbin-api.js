@@ -13,9 +13,15 @@ async function initializeJSONBins() {
     try {
         console.log('Initializing JSONBin.io...');
         
+        // Set the specific bin ID for order tracking
+        if (CONFIG && CONFIG.BINS) {
+            CONFIG.BINS.ORDER_TRACKING = "67e60dcc8561e97a50f45273";
+            console.log('Set ORDER_TRACKING bin ID:', CONFIG.BINS.ORDER_TRACKING);
+        }
+        
         // Check if all bin IDs are set in CONFIG
         if (CONFIG.BINS.PRODUCTS && CONFIG.BINS.ORDERS && CONFIG.BINS.SYSTEM_STATUS && 
-            CONFIG.BINS.SYSTEM_LOG && CONFIG.BINS.SYSTEM_STATUS_HISTORY && CONFIG.BINS.ORDER_TRACKING) {
+            CONFIG.BINS.SYSTEM_LOG && CONFIG.BINS.ORDER_TRACKING) {
             console.log('Using fixed bin IDs:', CONFIG.BINS);
             
             // Verify bins exist by trying to access system status
@@ -51,8 +57,7 @@ async function initializeJSONBins() {
         await createBinIfNotExists('ORDERS', DEFAULT_ORDERS);
         await createBinIfNotExists('SYSTEM_STATUS', DEFAULT_SYSTEM_STATUS);
         await createBinIfNotExists('SYSTEM_LOG', DEFAULT_SYSTEM_LOG);
-        await createBinIfNotExists('SYSTEM_STATUS_HISTORY', [DEFAULT_SYSTEM_STATUS]);
-        await createBinIfNotExists('ORDER_TRACKING', DEFAULT_ORDER_TRACKING);
+        await createBinIfNotExists('ORDER_TRACKING', []);
         
         // Save bin IDs to localStorage
         localStorage.setItem('seoul_grill_bins', JSON.stringify(CONFIG.BINS));
@@ -150,10 +155,8 @@ async function getBinData(binType) {
             return DEFAULT_SYSTEM_LOG;
         } else if (binType === 'ORDERS') {
             return DEFAULT_ORDERS;
-        } else if (binType === 'SYSTEM_STATUS_HISTORY') {
-            return [DEFAULT_SYSTEM_STATUS];
         } else if (binType === 'ORDER_TRACKING') {
-            return DEFAULT_ORDER_TRACKING;
+            return [];
         }
         
         return null;
@@ -201,127 +204,37 @@ async function getSystemStatus() {
     }
 }
 
-// Set system status
-async function setSystemStatus(isOnline, updatedBy = 'system') {
+// Queue an order
+async function queueOrder(order) {
     try {
-        console.log(`Setting system status to ${isOnline ? 'online' : 'offline'}...`);
+        console.log('Queueing order:', order);
         
-        // Get current system status
-        const systemStatus = await getBinData('SYSTEM_STATUS');
-        const wasOnline = systemStatus.status === 1;
-        const goingOnline = isOnline;
+        // Get current orders
+        const orders = await getBinData('ORDERS');
         
-        // If status is not changing, do nothing
-        if ((wasOnline && goingOnline) || (!wasOnline && !goingOnline)) {
-            console.log('System status is already set to the requested value');
-            return true;
-        }
+        // Add order to queue
+        orders.push(order);
         
-        // Create new status object
-        const newStatus = {
-            status: isOnline ? 1 : 0,
-            updated_by: updatedBy,
-            updated_at: new Date().toISOString()
-        };
+        // Update orders in bin
+        await updateBinData('ORDERS', orders);
         
-        // Update system status
-        systemStatus.status = newStatus.status;
-        systemStatus.updated_by = newStatus.updated_by;
-        systemStatus.updated_at = newStatus.updated_at;
+        // Add to order tracking
+        await addOrderToTracking(order);
         
-        console.log('Updating system status in JSONBin...');
-        
-        // Update system status in bin
-        await updateBinData('SYSTEM_STATUS', systemStatus);
-        
-        console.log('System status updated successfully in JSONBin');
-        
-        // Add to system status history - using the exact same format as the system status
-        await addToSystemStatusHistory(newStatus);
-        
-        // Also log to system log for backward compatibility
-        const logEntry = {
-            action: isOnline ? 'system_online' : 'system_offline',
-            description: isOnline ? 'System brought online' : 'System taken offline',
-            performed_by: updatedBy,
-            performed_at: newStatus.updated_at
-        };
-        
+        // Log order queued
         const systemLog = await getBinData('SYSTEM_LOG');
-        systemLog.push(logEntry);
+        systemLog.push({
+            action: 'order_queued',
+            description: `Order #${order.order_id} queued`,
+            performed_by: order.customer_email || 'Guest',
+            performed_at: new Date().toISOString()
+        });
         await updateBinData('SYSTEM_LOG', systemLog);
         
-        console.log('System status change logged successfully');
-        
-        // Process queued orders if going from offline to online
-        if (!wasOnline && goingOnline) {
-            console.log('Processing queued orders...');
-            const results = await processQueuedOrders();
-            console.log('Processed queued orders:', results);
-            
-            if (typeof showNotification === 'function') {
-                if (results.total > 0) {
-                    showNotification(`System is now online. Processed ${results.success} of ${results.total} queued orders.`, 'success');
-                } else {
-                    showNotification('System is now online. No queued orders to process.', 'success');
-                }
-            }
-        } else if (wasOnline && !goingOnline) {
-            if (typeof showNotification === 'function') {
-                showNotification('System is now offline. New orders will be queued.', 'warning');
-            }
-        }
-        
+        console.log('Order queued successfully');
         return true;
     } catch (error) {
-        console.error('Error setting system status:', error);
-        if (typeof showNotification === 'function') {
-            showNotification(`Error ${isOnline ? 'bringing system online' : 'taking system offline'}. Please try again.`, 'error');
-        }
-        return false;
-    }
-}
-
-// Add entry to system status history
-async function addToSystemStatusHistory(statusEntry) {
-    try {
-        console.log('Adding entry to system status history...');
-        
-        // Get current history
-        const history = await getBinData('SYSTEM_STATUS_HISTORY');
-        
-        // Add new entry
-        history.push(statusEntry);
-        
-        // Update history in bin
-        await updateBinData('SYSTEM_STATUS_HISTORY', history);
-        
-        console.log('System status history updated successfully');
-        return true;
-    } catch (error) {
-        console.error('Error adding to system status history:', error);
-        return false;
-    }
-}
-
-// Initialize SYSTEM_STATUS_HISTORY bin
-async function initializeSystemStatusHistory() {
-    try {
-        // Check if the bin exists and has data
-        const history = await getBinData('SYSTEM_STATUS_HISTORY');
-        
-        if (!history || history.length === 0) {
-            // Create initial entry based on current system status
-            const systemStatus = await getBinData('SYSTEM_STATUS');
-            
-            // Add the current status as the first history entry
-            await updateBinData('SYSTEM_STATUS_HISTORY', [systemStatus]);
-            console.log('System status history initialized with current status');
-        }
-        
-        return true;
-    } catch (error) {
-        console.error('Error initializing system status history:', error);
+        console.error('Error queuing order:', error);
         return false;
     }
 }
@@ -329,10 +242,16 @@ async function initializeSystemStatusHistory() {
 // Add order to tracking
 async function addOrderToTracking(order) {
     try {
-        console.log('Adding order to tracking...');
+        console.log('Adding order to tracking:', order);
         
         // Get current tracking data
-        const trackingData = await getBinData('ORDER_TRACKING');
+        let trackingData = await getBinData('ORDER_TRACKING');
+        
+        // Ensure trackingData is an array
+        if (!Array.isArray(trackingData)) {
+            console.warn('ORDER_TRACKING data is not an array, initializing as empty array');
+            trackingData = [];
+        }
         
         // Add new order to tracking
         trackingData.push(order);
@@ -354,7 +273,13 @@ async function getOrderTrackingByEmail(email) {
         console.log(`Getting order tracking for email: ${email}`);
         
         // Get all tracking data
-        const trackingData = await getBinData('ORDER_TRACKING');
+        let trackingData = await getBinData('ORDER_TRACKING');
+        
+        // Ensure trackingData is an array
+        if (!Array.isArray(trackingData)) {
+            console.warn('ORDER_TRACKING data is not an array, returning empty array');
+            return [];
+        }
         
         // Filter by email
         const customerOrders = trackingData.filter(order => order.customer_email === email);
@@ -364,6 +289,64 @@ async function getOrderTrackingByEmail(email) {
     } catch (error) {
         console.error(`Error getting order tracking for email ${email}:`, error);
         return [];
+    }
+}
+
+// Update order status
+async function updateOrderStatus(orderId, newStatus, updatedBy = 'system') {
+    try {
+        // Update in ORDERS bin
+        const orders = await getBinData('ORDERS');
+        const orderIndex = orders.findIndex(order => order.order_id === orderId);
+        
+        if (orderIndex !== -1) {
+            const oldStatus = orders[orderIndex].status;
+            orders[orderIndex].status = newStatus;
+            
+            if (newStatus === 'processed' && oldStatus !== 'processed') {
+                orders[orderIndex].processed_at = new Date().toISOString();
+            }
+            
+            await updateBinData('ORDERS', orders);
+        }
+        
+        // Update in ORDER_TRACKING bin
+        let trackingData = await getBinData('ORDER_TRACKING');
+        
+        // Ensure trackingData is an array
+        if (!Array.isArray(trackingData)) {
+            console.warn('ORDER_TRACKING data is not an array, initializing as empty array');
+            trackingData = [];
+        } else {
+            const trackingIndex = trackingData.findIndex(order => order.order_id === orderId);
+            
+            if (trackingIndex !== -1) {
+                const oldStatus = trackingData[trackingIndex].status;
+                trackingData[trackingIndex].status = newStatus;
+                
+                if (newStatus === 'processed' && oldStatus !== 'processed') {
+                    trackingData[trackingIndex].processed_at = new Date().toISOString();
+                }
+                
+                await updateBinData('ORDER_TRACKING', trackingData);
+            }
+        }
+        
+        // Log status change
+        const systemLog = await getBinData('SYSTEM_LOG');
+        systemLog.push({
+            action: 'order_status_updated',
+            description: `Order #${orderId} status changed to ${newStatus}`,
+            performed_by: updatedBy,
+            performed_at: new Date().toISOString()
+        });
+        await updateBinData('SYSTEM_LOG', systemLog);
+        
+        console.log(`Order #${orderId} status updated to ${newStatus}`);
+        return true;
+    } catch (error) {
+        console.error(`Error updating order #${orderId} status:`, error);
+        return false;
     }
 }
 
@@ -388,28 +371,13 @@ async function processQueuedOrders() {
         for (const order of queuedOrders) {
             try {
                 // Update order status
-                order.status = 'processed';
-                order.processed_at = new Date().toISOString();
+                await updateOrderStatus(order.order_id, 'processed', 'system');
                 successCount++;
-                
-                // Log order processed
-                const systemLog = await getBinData('SYSTEM_LOG');
-                systemLog.push({
-                    action: 'order_processed',
-                    description: `Order #${order.order_id} processed`,
-                    performed_by: 'system',
-                    performed_at: new Date().toISOString()
-                });
-                await updateBinData('SYSTEM_LOG', systemLog);
             } catch (error) {
                 console.error(`Error processing order ${order.order_id}:`, error);
-                order.status = 'failed';
                 failedCount++;
             }
         }
-        
-        // Update orders in bin
-        await updateBinData('ORDERS', orders);
         
         return {
             success: successCount,
@@ -427,254 +395,13 @@ async function processQueuedOrders() {
     }
 }
 
-// Queue an order
-async function queueOrder(order) {
-    try {
-        // Get current orders
-        const orders = await getBinData('ORDERS');
-        
-        // Add order to queue
-        orders.push(order);
-        
-        // Update orders in bin
-        await updateBinData('ORDERS', orders);
-        
-        // Add order to tracking
-        await addOrderToTracking(order);
-        
-        // Log order queued
-        const systemLog = await getBinData('SYSTEM_LOG');
-        systemLog.push({
-            action: 'order_queued',
-            description: `Order #${order.order_id} queued`,
-            performed_by: order.customer_name || 'Guest',
-            performed_at: new Date().toISOString()
-        });
-        await updateBinData('SYSTEM_LOG', systemLog);
-        
-        return true;
-    } catch (error) {
-        console.error('Error queuing order:', error);
-        return false;
-    }
-}
-
-// Get all orders
-async function getAllOrders() {
-    try {
-        return await getBinData('ORDERS');
-    } catch (error) {
-        console.error('Error getting all orders:', error);
-        return [];
-    }
-}
-
-// Get order by ID
-async function getOrderById(orderId) {
-    try {
-        const orders = await getBinData('ORDERS');
-        return orders.find(order => order.order_id === orderId) || null;
-    } catch (error) {
-        console.error(`Error getting order #${orderId}:`, error);
-        return null;
-    }
-}
-
-// Update order status
-async function updateOrderStatus(orderId, newStatus, updatedBy = 'system') {
-    try {
-        const orders = await getBinData('ORDERS');
-        const orderIndex = orders.findIndex(order => order.order_id === orderId);
-        
-        if (orderIndex === -1) {
-            throw new Error(`Order #${orderId} not found`);
-        }
-        
-        const oldStatus = orders[orderIndex].status;
-        orders[orderIndex].status = newStatus;
-        
-        if (newStatus === 'processed' && oldStatus !== 'processed') {
-            orders[orderIndex].processed_at = new Date().toISOString();
-        }
-        
-        await updateBinData('ORDERS', orders);
-        
-        // Update tracking data as well
-        const trackingData = await getBinData('ORDER_TRACKING');
-        const trackingIndex = trackingData.findIndex(order => order.order_id === orderId);
-        
-        if (trackingIndex !== -1) {
-            trackingData[trackingIndex].status = newStatus;
-            if (newStatus === 'processed' && oldStatus !== 'processed') {
-                trackingData[trackingIndex].processed_at = new Date().toISOString();
-            }
-            await updateBinData('ORDER_TRACKING', trackingData);
-        }
-        
-        // Log status change
-        const systemLog = await getBinData('SYSTEM_LOG');
-        systemLog.push({
-            action: 'order_status_updated',
-            description: `Order #${orderId} status changed from ${oldStatus} to ${newStatus}`,
-            performed_by: updatedBy,
-            performed_at: new Date().toISOString()
-        });
-        await updateBinData('SYSTEM_LOG', systemLog);
-        
-        return true;
-    } catch (error) {
-        console.error(`Error updating order #${orderId} status:`, error);
-        return false;
-    }
-}
-
-// Delete order
-async function deleteOrder(orderId, deletedBy = 'system') {
-    try {
-        const orders = await getBinData('ORDERS');
-        const orderIndex = orders.findIndex(order => order.order_id === orderId);
-        
-        if (orderIndex === -1) {
-            throw new Error(`Order #${orderId} not found`);
-        }
-        
-        // Remove the order
-        const deletedOrder = orders.splice(orderIndex, 1)[0];
-        
-        await updateBinData('ORDERS', orders);
-        
-        // Remove from tracking data as well
-        const trackingData = await getBinData('ORDER_TRACKING');
-        const trackingIndex = trackingData.findIndex(order => order.order_id === orderId);
-        
-        if (trackingIndex !== -1) {
-            trackingData.splice(trackingIndex, 1);
-            await updateBinData('ORDER_TRACKING', trackingData);
-        }
-        
-        // Log deletion
-        const systemLog = await getBinData('SYSTEM_LOG');
-        systemLog.push({
-            action: 'order_deleted',
-            description: `Order #${orderId} deleted`,
-            performed_by: deletedBy,
-            performed_at: new Date().toISOString()
-        });
-        await updateBinData('SYSTEM_LOG', systemLog);
-        
-        return true;
-    } catch (error) {
-        console.error(`Error deleting order #${orderId}:`, error);
-        return false;
-    }
-}
-
-// Backup all data
-async function backupAllData() {
-    try {
-        const products = await getBinData('PRODUCTS');
-        const orders = await getBinData('ORDERS');
-        const systemStatus = await getBinData('SYSTEM_STATUS');
-        const systemLog = await getBinData('SYSTEM_LOG');
-        const systemStatusHistory = await getBinData('SYSTEM_STATUS_HISTORY');
-        const orderTracking = await getBinData('ORDER_TRACKING');
-        
-        const backup = {
-            products,
-            orders,
-            systemStatus,
-            systemLog,
-            systemStatusHistory,
-            orderTracking,
-            timestamp: new Date().toISOString(),
-            version: CONFIG.VERSION
-        };
-        
-        return backup;
-    } catch (error) {
-        console.error('Error creating backup:', error);
-        throw error;
-    }
-}
-
-// Restore from backup
-async function restoreFromBackup(backup, restoredBy = 'system') {
-    try {
-        // Validate backup
-        if (!backup || !backup.products || !backup.orders || !backup.systemStatus || !backup.systemLog) {
-            throw new Error('Invalid backup data');
-        }
-        
-        // Restore each data type
-        await updateBinData('PRODUCTS', backup.products);
-        await updateBinData('ORDERS', backup.orders);
-        await updateBinData('SYSTEM_STATUS', backup.systemStatus);
-        
-        // Restore system status history if available
-        if (backup.systemStatusHistory) {
-            await updateBinData('SYSTEM_STATUS_HISTORY', backup.systemStatusHistory);
-        }
-        
-        // Restore order tracking if available
-        if (backup.orderTracking) {
-            await updateBinData('ORDER_TRACKING', backup.orderTracking);
-        }
-        
-        // Add restoration log entry
-        const systemLog = backup.systemLog || [];
-        systemLog.push({
-            action: 'system_restored',
-            description: `System restored from backup created at ${backup.timestamp || 'unknown time'}`,
-            performed_by: restoredBy,
-            performed_at: new Date().toISOString()
-        });
-        await updateBinData('SYSTEM_LOG', systemLog);
-        
-        return true;
-    } catch (error) {
-        console.error('Error restoring from backup:', error);
-        throw error;
-    }
-}
-
-// Check if running on GitHub Pages
-function isRunningOnGitHubPages() {
-    return window.location.hostname.endsWith('github.io');
-}
-
-// Auto-initialize on GitHub Pages if enabled
-if (CONFIG.AUTO_INIT && isRunningOnGitHubPages()) {
-    console.log('Auto-initializing on GitHub Pages...');
-    window.addEventListener('load', () => {
-        setTimeout(() => {
-            initializeJSONBins()
-                .then(success => {
-                    console.log('Auto-initialization result:', success ? 'Success' : 'Failed');
-                    if (success) {
-                        return initializeSystemStatusHistory();
-                    }
-                })
-                .catch(error => {
-                    console.error('Auto-initialization error:', error);
-                });
-        }, 1000); // Delay initialization to ensure page is fully loaded
-    });
-}
-
 // Make functions available globally
 window.initializeJSONBins = initializeJSONBins;
 window.getBinData = getBinData;
 window.updateBinData = updateBinData;
 window.getSystemStatus = getSystemStatus;
-window.setSystemStatus = setSystemStatus;
-window.initializeSystemStatusHistory = initializeSystemStatusHistory;
-window.processQueuedOrders = processQueuedOrders;
 window.queueOrder = queueOrder;
-window.getAllOrders = getAllOrders;
-window.getOrderById = getOrderById;
-window.updateOrderStatus = updateOrderStatus;
-window.deleteOrder = deleteOrder;
-window.backupAllData = backupAllData;
-window.restoreFromBackup = restoreFromBackup;
 window.addOrderToTracking = addOrderToTracking;
 window.getOrderTrackingByEmail = getOrderTrackingByEmail;
+window.updateOrderStatus = updateOrderStatus;
+window.processQueuedOrders = processQueuedOrders;
