@@ -274,49 +274,52 @@ function toggleOrderDetails(orderId) {
 // Load system status history
 async function loadSystemStatusHistory() {
     try {
-        console.log("Loading system status history...")
-        const systemLog = await getBinData("SYSTEM_LOG")
-        const statusHistory = systemLog
-            .filter((entry) => entry.action === "system_online" || entry.action === "system_offline")
-            .slice(-5) // Get last 5 entries
+        console.log("Loading system status history...");
+        const statusHistory = await getBinData('SYSTEM_STATUS_HISTORY');
+        
+        // Sort by timestamp (newest first)
+        statusHistory.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+        
+        // Take only the most recent entries (limit to 10)
+        const recentHistory = statusHistory.slice(0, 10);
 
         // Update status history table
-        const statusHistoryTable = document.getElementById("status-history")
+        const statusHistoryTable = document.getElementById("status-history");
         if (statusHistoryTable) {
-            statusHistoryTable.innerHTML = ""
+            statusHistoryTable.innerHTML = "";
 
-            if (statusHistory.length === 0) {
-                const tr = document.createElement("tr")
-                tr.innerHTML = '<td colspan="3">No status changes recorded yet.</td>'
-                statusHistoryTable.appendChild(tr)
+            if (recentHistory.length === 0) {
+                const tr = document.createElement("tr");
+                tr.innerHTML = '<td colspan="3">No status changes recorded yet.</td>';
+                statusHistoryTable.appendChild(tr);
             } else {
-                statusHistory.forEach((entry) => {
-                    const tr = document.createElement("tr")
+                recentHistory.forEach((entry) => {
+                    const tr = document.createElement("tr");
+                    const isOnline = entry.status === 1;
+                    
                     tr.innerHTML = `
                         <td>
-                            ${
-                                entry.action === "system_online"
-                                    ? '<span class="status-online"><i class="fas fa-check-circle"></i> System Brought Online</span>'
-                                    : '<span class="status-offline"><i class="fas fa-times-circle"></i> System Taken Offline</span>'
+                            ${isOnline 
+                                ? '<span class="status-online"><i class="fas fa-check-circle"></i> System Brought Online</span>'
+                                : '<span class="status-offline"><i class="fas fa-times-circle"></i> System Taken Offline</span>'
                             }
                         </td>
-                        <td>${entry.performed_by}</td>
-                        <td>${new Date(entry.performed_at).toLocaleString()}</td>
-                    `
+                        <td>${entry.updated_by}</td>
+                        <td>${new Date(entry.updated_at).toLocaleString()}</td>
+                    `;
 
-                    statusHistoryTable.appendChild(tr)
-                })
+                    statusHistoryTable.appendChild(tr);
+                });
             }
         }
 
-        console.log("System status history loaded successfully:", statusHistory.length, "entries")
-        return statusHistory
+        console.log("System status history loaded successfully:", recentHistory.length, "entries");
+        return recentHistory;
     } catch (error) {
-        console.error("Error loading system status history:", error)
-        return []
+        console.error("Error loading system status history:", error);
+        return [];
     }
 }
-
 // Display processing results
 function displayProcessingResults(results) {
     const processingResults = document.getElementById("processing-results")
