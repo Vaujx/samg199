@@ -119,6 +119,8 @@ async function getSystemStatus() {
 // Set system status
 async function setSystemStatus(isOnline, updatedBy = 'system') {
     try {
+        console.log(`Setting system status to ${isOnline ? 'online' : 'offline'}...`);
+        
         // Get current system status
         const systemStatus = await getBinData('SYSTEM_STATUS');
         const wasOnline = systemStatus.status === 1;
@@ -130,28 +132,45 @@ async function setSystemStatus(isOnline, updatedBy = 'system') {
             return true;
         }
         
+        // Create new status object
+        const newStatus = {
+            status: isOnline ? 1 : 0,
+            updated_by: updatedBy,
+            updated_at: new Date().toISOString()
+        };
+        
         // Update system status
-        systemStatus.status = isOnline ? 1 : 0;
-        systemStatus.updated_by = updatedBy;
-        systemStatus.updated_at = new Date().toISOString();
+        systemStatus.status = newStatus.status;
+        systemStatus.updated_by = newStatus.updated_by;
+        systemStatus.updated_at = newStatus.updated_at;
+        
+        console.log('Updating system status in JSONBin...');
         
         // Update system status in bin
         await updateBinData('SYSTEM_STATUS', systemStatus);
         
-        // Log status change
+        console.log('System status updated successfully in JSONBin');
+        
+        // Add to system status history - using the exact same format as the system status
+        await addToSystemStatusHistory(newStatus);
+        
+        // Also log to system log for backward compatibility
         const logEntry = {
             action: isOnline ? 'system_online' : 'system_offline',
             description: isOnline ? 'System brought online' : 'System taken offline',
             performed_by: updatedBy,
-            performed_at: new Date().toISOString()
+            performed_at: newStatus.updated_at
         };
         
         const systemLog = await getBinData('SYSTEM_LOG');
         systemLog.push(logEntry);
         await updateBinData('SYSTEM_LOG', systemLog);
         
+        console.log('System status change logged successfully');
+        
         // Process queued orders if going from offline to online
         if (!wasOnline && goingOnline) {
+            console.log('Processing queued orders...');
             const results = await processQueuedOrders();
             console.log('Processed queued orders:', results);
             
@@ -174,6 +193,28 @@ async function setSystemStatus(isOnline, updatedBy = 'system') {
         if (typeof showNotification === 'function') {
             showNotification(`Error ${isOnline ? 'bringing system online' : 'taking system offline'}. Please try again.`, 'error');
         }
+        return false;
+    }
+}
+
+// Add entry to system status history
+async function addToSystemStatusHistory(statusEntry) {
+    try {
+        console.log('Adding entry to system status history...');
+        
+        // Get current history
+        const history = await getBinData('SYSTEM_STATUS_HISTORY');
+        
+        // Add new entry
+        history.push(statusEntry);
+        
+        // Update history in bin
+        await updateBinData('SYSTEM_STATUS_HISTORY', history);
+        
+        console.log('System status history updated successfully');
+        return true;
+    } catch (error) {
+        console.error('Error adding to system status history:', error);
         return false;
     }
 }
