@@ -17,19 +17,22 @@
 
   <div class="section-title">Order Queue Management</div>
   
-  <div class="admin-container">
-      <div id="admin-login" class="admin-section">
-          <h3>Admin Login</h3>
-          <p>Please enter the admin password to access the queue management system.</p>
-          
-          <div class="login-form">
-              <div class="form-group">
-                  <label for="admin_password">Admin Password:</label>
-                  <input type="password" id="admin_password" required>
-              </div>
-              <button type="button" id="login-button" class="login-button">Login</button>
-          </div>
-      </div>
+  <div id="admin-login-container" style="display: none;">
+    <div class="admin-login-box">
+        <h2>Admin Login</h2>
+        <form id="admin-login-form">
+            <div class="form-group">
+                <label for="admin-username">Username:</label>
+                <input type="text" id="admin-username" name="username" required>
+            </div>
+            <div class="form-group">
+                <label for="admin-password">Password:</label>
+                <input type="password" id="admin-password" name="password" required>
+            </div>
+            <button type="button" id="admin-login-button" onclick="authenticateAdmin()">Login</button>
+        </form>
+    </div>
+</div>
       
       <div id="admin-dashboard" style="display: none;">
           <div class="admin-actions">
