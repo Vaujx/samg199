@@ -8,12 +8,12 @@ const CONFIG = {
    JSONBIN_URL: "https://api.jsonbin.io/v3/b",
    MASTER_KEY: "$2a$10$qrZ9tpKi.ajyrHn7A.dMbeABtgoW6dnb6aVVQWDxBjhfPNSw9skEC", // Replace with your actual Master Key
    X_ACCESS_KEY: "$2a$10$V5G6G/GoKByB9rHsvU2bRupT.5uqU15DTZBXguWdHdrkTYi/ljsQG", // Replace with your actual Access Key
-   // Bin IDs for different data types - Replace with your actual bin IDs
+   // Bin IDs for different data types - Using the correct bin IDs from your image
    BINS: {
-       PRODUCTS: "67e54b4b8960c979a5798697", 
-       ORDERS: "67e54c158561e97a50f3f456", 
-       SYSTEM_STATUS: "67e54b6d8a456b79667dbebe", 
-       SYSTEM_LOG: "67e54c2b8960c979a579877a", 
+       PRODUCTS: "67e54b4b896bc979a579869f", // PRODUCTS Bin
+       ORDERS: "67e54c15856fe97a50f3f456", // ORDERS Bin
+       SYSTEM_STATUS: "67e54b6d8a456b79667dbebe", // SYSTEM_STATUS Bin
+       SYSTEM_LOG: "67e54c2b896bc979a579877a", // SYSTEM_LOG Bin
    },
    // Default admin password
    ADMIN_PASSWORD: "admin123",
