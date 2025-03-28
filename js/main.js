@@ -32,9 +32,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         console.log("Application initialized successfully.");
     } catch (error) {
         console.error("Error initializing application:", error);
-        if (typeof showNotification === 'function') {
-            showNotification("There was an error initializing the application. Please refresh the page.", "error");
-        }
+        console.log("Application will continue with limited functionality.");
     }
 });
 
