@@ -219,99 +219,99 @@ function validateEmail(email) {
 
 // Process payment/checkout
 async function processPayment() {
-   const cart = initializeCart();
-   
-   // Check if cart is empty
-   if (Object.keys(cart).length === 0) {
-       showNotification('Your cart is empty!', 'error');
-       closeCheckoutModal();
-       return;
-   }
-   
-   // Get customer email
-   const customerEmail = document.getElementById('customer-email').value.trim();
-   
-   // Validate email
-   if (!customerEmail || !validateEmail(customerEmail)) {
-       showNotification('Please enter a valid email address for order tracking.', 'error');
-       return;
-   }
-   
-   try {
-       // Check system status
-       const systemStatus = await getSystemStatus();
-       
-       // Calculate total
-       const total = await calculateTotal(cart);
-       
-       // Generate order ID
-       const orderId = generateOrderId();
-       
-       // Create order object
-       const order = {
-           order_id: orderId,
-           items: cart,
-           total_amount: total,
-           customer_email: customerEmail,
-           payment_method: 'Cash on Delivery',
-           status: systemStatus ? 'processed' : 'queued',
-           queued_at: new Date().toISOString(),
-           processed_at: systemStatus ? new Date().toISOString() : null,
-           delivery_status: 'pending',
-           delivery_address: '',
-           contact_number: '',
-           notes: ''
-       };
-       
-       // Queue order
-       const success = await queueOrder(order);
-       
-       if (success) {
-           // Clear cart
-           clearCart();
-           
-           // Close checkout modal
-           closeCheckoutModal();
-           
-           // Show success modal
-           const successTitle = document.getElementById('success-title');
-           const successMessage = document.getElementById('success-message');
-           
-           if (successTitle && successMessage) {
-               if (systemStatus) {
-                   successTitle.textContent = 'Order Placed Successfully!';
-                   successMessage.innerHTML = `
-                       Thank you for your order. Your order ID is <strong>#${orderId}</strong>.<br>
-                       We will deliver your order shortly. Payment will be collected upon delivery.<br>
-                       You can track your order status using your email address.
-                   `;
-               } else {
-                   successTitle.textContent = 'Order Queued Successfully!';
-                   successMessage.innerHTML = `
-                       Your order has been queued and will be processed as soon as our system is back online.<br>
-                       Your order ID is <strong>#${orderId}</strong>.<br>
-                       You can track your order status using your email address.
-                   `;
-               }
-           }
-           
-           document.getElementById('successModal').style.display = 'block';
-           
-           // Add tracking link to success modal
-           const trackingLink = document.getElementById('tracking-link');
-           if (trackingLink) {
-               trackingLink.href = `order-tracking.html?email=${encodeURIComponent(customerEmail)}`;
-               trackingLink.style.display = 'inline-block';
-           }
-       } else {
-           showNotification('There was an error processing your order. Please try again later.', 'error');
-           closeCheckoutModal();
-       }
-   } catch (error) {
-       console.error('Error processing payment:', error);
-       showNotification('There was an error processing your order. Please try again later.', 'error');
-       closeCheckoutModal();
-   }
+    const cart = initializeCart();
+    
+    // Check if cart is empty
+    if (Object.keys(cart).length === 0) {
+        showNotification('Your cart is empty!', 'error');
+        closeCheckoutModal();
+        return;
+    }
+    
+    // Get customer email
+    const customerEmail = document.getElementById('customer-email').value.trim();
+    
+    // Validate email
+    if (!customerEmail || !validateEmail(customerEmail)) {
+        showNotification('Please enter a valid email address for order tracking.', 'error');
+        return;
+    }
+    
+    try {
+        // Check system status
+        const systemStatus = await getSystemStatus();
+        
+        // Calculate total
+        const total = await calculateTotal(cart);
+        
+        // Generate order ID
+        const orderId = generateOrderId();
+        
+        // Create order object
+        const order = {
+            order_id: orderId,
+            items: cart,
+            total_amount: total,
+            customer_email: customerEmail, // Make sure this is set correctly
+            payment_method: 'Cash on Delivery',
+            status: systemStatus ? 'processed' : 'queued',
+            queued_at: new Date().toISOString(),
+            processed_at: systemStatus ? new Date().toISOString() : null,
+            delivery_status: 'pending',
+            delivery_address: '',
+            contact_number: '',
+            notes: ''
+        };
+        
+        // Queue order
+        const success = await queueOrder(order);
+        
+        if (success) {
+            // Clear cart
+            clearCart();
+            
+            // Close checkout modal
+            closeCheckoutModal();
+            
+            // Show success modal
+            const successTitle = document.getElementById('success-title');
+            const successMessage = document.getElementById('success-message');
+            
+            if (successTitle && successMessage) {
+                if (systemStatus) {
+                    successTitle.textContent = 'Order Placed Successfully!';
+                    successMessage.innerHTML = `
+                        Thank you for your order. Your order ID is <strong>#${orderId}</strong>.<br>
+                        We will deliver your order shortly. Payment will be collected upon delivery.<br>
+                        You can track your order status using your email address.
+                    `;
+                } else {
+                    successTitle.textContent = 'Order Queued Successfully!';
+                    successMessage.innerHTML = `
+                        Your order has been queued and will be processed as soon as our system is back online.<br>
+                        Your order ID is <strong>#${orderId}</strong>.<br>
+                        You can track your order status using your email address.
+                    `;
+                }
+            }
+            
+            document.getElementById('successModal').style.display = 'block';
+            
+            // Add tracking link to success modal
+            const trackingLink = document.getElementById('tracking-link');
+            if (trackingLink) {
+                trackingLink.href = `order-tracking.html?email=${encodeURIComponent(customerEmail)}`;
+                trackingLink.style.display = 'inline-block';
+            }
+        } else {
+            showNotification('There was an error processing your order. Please try again later.', 'error');
+            closeCheckoutModal();
+        }
+    } catch (error) {
+        console.error('Error processing payment:', error);
+        showNotification('There was an error processing your order. Please try again later.', 'error');
+        closeCheckoutModal();
+    }
 }
 
 // Generate a unique order ID
