@@ -96,7 +96,13 @@ async function calculateTotal(cart) {
    let total = 0;
    
    // Load products to get prices
-   const products = await loadProducts();
+   let products;
+   try {
+       products = await loadProducts();
+   } catch (error) {
+       console.error('Error loading products:', error);
+       products = DEFAULT_PRODUCTS;
+   }
    
    for (const [product, quantity] of Object.entries(cart)) {
        if (products[product]) {
@@ -127,7 +133,14 @@ async function displayCart() {
    cartItems.innerHTML = '';
    
    // Load products to get prices
-   const products = await loadProducts();
+   let products;
+   try {
+       products = await loadProducts();
+   } catch (error) {
+       console.error('Error loading products:', error);
+       products = DEFAULT_PRODUCTS;
+   }
+   
    let total = 0;
    
    // Add each cart item to the table
@@ -175,6 +188,9 @@ async function displayCart() {
    if (checkoutTotal) {
        checkoutTotal.textContent = `₱${total.toFixed(2)}`;
    }
+   
+   // Update cart badge
+   updateCartBadge();
 }
 
 // Open checkout modal
@@ -188,7 +204,14 @@ async function openCheckoutModal() {
    }
    
    // Check system status and update modal accordingly
-   const systemStatus = await getSystemStatus();
+   let systemStatus = true;
+   try {
+       systemStatus = await getSystemStatus();
+   } catch (error) {
+       console.error('Error getting system status:', error);
+       // Default to online if there's an error
+       systemStatus = true;
+   }
    
    // Update modal based on system status
    const maintenanceNotice = document.getElementById('checkout-maintenance-notice');
@@ -332,10 +355,36 @@ async function processPayment() {
         }
         
         // Check system status
-        const systemStatus = await getSystemStatus();
+        let systemStatus = true;
+        try {
+            systemStatus = await getSystemStatus();
+        } catch (error) {
+            console.error('Error getting system status:', error);
+            // Default to online if there's an error
+            systemStatus = true;
+        }
         
         // Calculate total
-        const total = await calculateTotal(cart);
+        let total = 0;
+        try {
+            total = await calculateTotal(cart);
+        } catch (error) {
+            console.error('Error calculating total:', error);
+            // Use a fallback calculation
+            let products;
+            try {
+                products = await loadProducts();
+            } catch (e) {
+                console.error('Error loading products:', e);
+                products = DEFAULT_PRODUCTS;
+            }
+            
+            for (const [product, quantity] of Object.entries(cart)) {
+                if (products[product]) {
+                    total += products[product].price * quantity;
+                }
+            }
+        }
         
         // Generate order ID
         const orderId = generateOrderId();
@@ -357,7 +406,66 @@ async function processPayment() {
         };
         
         // Queue order
-        const success = await queueOrder(order);
+        let success = false;
+        try {
+            success = await queueOrder(order);
+        } catch (error) {
+            console.error('Error queuing order:', error);
+            
+            // Try direct update to ORDER_TRACKING bin as fallback
+            try {
+                console.log('Attempting direct update to ORDER_TRACKING bin...');
+                
+                // Get current tracking data
+                let trackingData = [];
+                
+                try {
+                    const response = await fetch(`${CONFIG.JSONBIN_URL}/${CONFIG.BINS.ORDER_TRACKING}/latest`, {
+                        method: 'GET',
+                        headers: {
+                            'X-Master-Key': CONFIG.MASTER_KEY
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        trackingData = data.record;
+                        
+                        // Ensure trackingData is an array
+                        if (!Array.isArray(trackingData)) {
+                            console.warn('ORDER_TRACKING data is not an array, initializing as empty array');
+                            trackingData = [];
+                        }
+                    } else {
+                        console.warn('Failed to get ORDER_TRACKING data, initializing as empty array');
+                    }
+                } catch (e) {
+                    console.warn('Error getting ORDER_TRACKING data, initializing as empty array:', e);
+                }
+                
+                // Add new order to tracking
+                trackingData.push(order);
+                
+                // Update tracking data in bin
+                const updateResponse = await fetch(`${CONFIG.JSONBIN_URL}/${CONFIG.BINS.ORDER_TRACKING}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Master-Key': CONFIG.MASTER_KEY
+                    },
+                    body: JSON.stringify(trackingData)
+                });
+                
+                if (updateResponse.ok) {
+                    console.log('Order added to tracking successfully via direct update');
+                    success = true;
+                } else {
+                    console.error('Failed to update ORDER_TRACKING data via direct update');
+                }
+            } catch (e) {
+                console.error('Error with direct update to ORDER_TRACKING bin:', e);
+            }
+        }
         
         // Hide loading spinner
         hideLoadingSpinner();
