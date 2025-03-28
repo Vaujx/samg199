@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Tracking - Seoul Grill 199</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        .tracking-container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 30px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 15px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            color: white;
+        }
+        
+        .tracking-form {
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .tracking-form input[type="email"] {
+            width: 100%;
+            max-width: 400px;
+            padding: 12px;
+            border-radius: 5px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+            margin-bottom: 15px;
+        }
+        
+        .tracking-form button {
+            background-color: #ff6347;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .tracking-form button:hover {
+            background-color: #ff4500;
+        }
+        
+        .order-list {
+            margin-top: 30px;
+        }
+        
+        .order-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-left: 5px solid #ff6347;
+        }
+        
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .order-id {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #ffd700;
+        }
+        
+        .order-date {
+            font-size: 0.9rem;
+            color: #ccc;
+        }
+        
+        .order-status-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .order-status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .status-processed {
+            background-color: rgba(76, 175, 80, 0.3);
+            color: #4CAF50;
+        }
+        
+        .status-queued {
+            background-color: rgba(255, 152, 0, 0.3);
+            color: #FF9800;
+        }
+        
+        .status-delivered {
+            background-color: rgba(33, 150, 243, 0.3);
+            color: #2196F3;
+        }
+        
+        .status-cancelled {
+            background-color: rgba(244, 67, 54, 0.3);
+            color: #F44336;
+        }
+        
+        .payment-method {
+            font-size: 0.9rem;
+            color: #ccc;
+        }
+        
+        .order-items {
+            margin-bottom: 15px;
+        }
+        
+        .order-items h4 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: #ffd700;
+        }
+        
+        .order-items ul {
+            padding-left: 20px;
+        }
+        
+        .order-total {
+            font-size: 1.2rem;
+            font-weight: bold;
+            text-align: right;
+            margin-top: 15px;
+            color: #ffd700;
+        }
+        
+        .no-orders {
+            text-align: center;
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+        
+        .tracking-steps {
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .step {
+            display: flex;
+            margin-bottom: 10px;
+        }
+        
+        .step-icon {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.2);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-right: 15px;
+        }
+        
+        .step-active .step-icon {
+            background-color: #4CAF50;
+        }
+        
+        .step-content {
+            flex: 1;
+        }
+        
+        .step-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .step-description {
+            font-size: 0.9rem;
+            color: #ccc;
+        }
+        
+        .step-line {
+            width: 2px;
+            height: 30px;
+            background-color: rgba(255, 255, 255, 0.2);
+            margin-left: 14px;
+            margin-bottom: -5px;
+        }
+        
+        .step-active .step-line {
+            background-color: #4CAF50;
+        }
+        
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .tracking-instructions {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .tracking-instructions h3 {
+            color: #ffd700;
+            margin-top: 0;
+        }
+        
+        .tracking-instructions ol {
+            padding-left: 20px;
+        }
+        
+        .tracking-instructions li {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <img src="images/background1.png" alt="Seoul Grill 199" class="header-logo">
+        <h1 class="header-text">Order Tracking</h1>
+    </div>
+
+    <!-- Back Button -->
+    <div style="text-align: center; margin-top: 20px;">
+        <a href="index.html" class="back-button">
+            <i class="fas fa-arrow-left"></i> Back to Home
+        </a>
+    </div>
+
+    <div id="notification" class="notification" style="display: none;">
+        <i class="fas fa-check-circle"></i> <span id="notification-message"></span>
+        <span class="close-notification" onclick="document.getElementById('notification').style.display='none'">&times;</span>
+    </div>
+
+    <div class="tracking-container">
+        <h2 class="section-title">Track Your Order</h2>
+        
+        <div class="tracking-instructions">
+            <h3><i class="fas fa-info-circle"></i> How to Track Your Order</h3>
+            <ol>
+                <li>Enter the email address you used when placing your order</li>
+                <li>Click the "Track Orders" button to see all your orders</li>
+                <li>View the status and details of each order</li>
+            </ol>
+        </div>
+        
+        <div class="tracking-form">
+            <input type="email" id="tracking-email" placeholder="Enter your email address" required>
+            <button type="button" id="track-button">
+                <i class="fas fa-search"></i> Track Orders
+            </button>
+        </div>
+        
+        <div id="orders-container" class="order-list" style="display: none;">
+            <h3>Your Orders</h3>
+            <div id="orders-list">
+                <!-- Orders will be loaded here via JavaScript -->
+            </div>
+        </div>
+        
+        <div id="no-orders" class="no-orders" style="display: none;">
+            <i class="fas fa-search" style="font-size: 3rem; margin-bottom: 15px;"></i>
+            <h3>No Orders Found</h3>
+            <p>We couldn't find any orders associated with this email address. Please check your email and try again.</p>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>Contact Us</h3>
+                <p>Phone: 0910-392-6577</p>
+                <p>Email: info@seoulgrill199.com</p>
+            </div>
+            <div class="footer-section">
+                <h3>Quick Links</h3>
+                <ul>
+                    <li><button class="btn"><a href="index.html">Home</a></button></li>
+                    <li><button class="btn"><a href="about.html">About Us</a></button></li>
+                    <li><button class="btn"><a href="order-tracking.html">Track Order</a></button></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>Follow Us</h3>
+                <div class="social-links">
+                    <a href="https://web.facebook.com/profile.php?id=100092652071507" target="_blank"><img src="images/facebook-icon.png" alt="Facebook"></a>&nbsp;&nbsp;
+                    <a href="#" target="_blank"><img src="images/instagram-icon.png" alt="Instagram"></a>&nbsp;&nbsp;
+                    <a href="#" target="_blank"><img src="images/twitter-icon.png" alt="Twitter"></a>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; <span id="current-year"></span> Seoul Grill 199 Online Ordering. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="js/config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/jsonbin-api.js"></script>
+    <script src="js/order-tracking.js"></script>
+    <script>
+        document.getElementById('current-year').textContent = new Date().getFullYear();
+    </script>
+</body>
+</html>
