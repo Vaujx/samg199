@@ -217,6 +217,90 @@ function validateEmail(email) {
    return re.test(String(email).toLowerCase());
 }
 
+// Add CSS for loading spinner
+function addLoadingSpinnerStyles() {
+    // Check if styles already exist
+    if (document.getElementById('loading-spinner-styles')) return;
+    
+    const style = document.createElement('style');
+    style.id = 'loading-spinner-styles';
+    style.textContent = `
+        .loading-spinner-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+        
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        .loading-text {
+            color: white;
+            margin-top: 20px;
+            font-size: 18px;
+            text-align: center;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+// Show loading spinner
+function showLoadingSpinner(message = 'Processing your order...') {
+    // Add styles if not already added
+    addLoadingSpinnerStyles();
+    
+    // Create spinner overlay
+    const overlay = document.createElement('div');
+    overlay.className = 'loading-spinner-overlay';
+    overlay.id = 'loading-spinner-overlay';
+    
+    // Create spinner container
+    const container = document.createElement('div');
+    container.style.display = 'flex';
+    container.style.flexDirection = 'column';
+    container.style.alignItems = 'center';
+    
+    // Create spinner
+    const spinner = document.createElement('div');
+    spinner.className = 'loading-spinner';
+    
+    // Create text
+    const text = document.createElement('div');
+    text.className = 'loading-text';
+    text.textContent = message;
+    
+    // Assemble elements
+    container.appendChild(spinner);
+    container.appendChild(text);
+    overlay.appendChild(container);
+    document.body.appendChild(overlay);
+}
+
+// Hide loading spinner
+function hideLoadingSpinner() {
+    const overlay = document.getElementById('loading-spinner-overlay');
+    if (overlay) {
+        overlay.remove();
+    }
+}
+
 // Process payment/checkout
 async function processPayment() {
     const cart = initializeCart();
@@ -238,6 +322,15 @@ async function processPayment() {
     }
     
     try {
+        // Show loading spinner
+        showLoadingSpinner('Processing your order...');
+        
+        // Disable the checkout button to prevent multiple submissions
+        const checkoutButton = document.querySelector('.checkout-modal-pay');
+        if (checkoutButton) {
+            checkoutButton.disabled = true;
+        }
+        
         // Check system status
         const systemStatus = await getSystemStatus();
         
@@ -252,7 +345,7 @@ async function processPayment() {
             order_id: orderId,
             items: cart,
             total_amount: total,
-            customer_email: customerEmail, // Make sure this is set correctly
+            customer_email: customerEmail,
             payment_method: 'Cash on Delivery',
             status: systemStatus ? 'processed' : 'queued',
             queued_at: new Date().toISOString(),
@@ -265,6 +358,14 @@ async function processPayment() {
         
         // Queue order
         const success = await queueOrder(order);
+        
+        // Hide loading spinner
+        hideLoadingSpinner();
+        
+        // Re-enable the checkout button
+        if (checkoutButton) {
+            checkoutButton.disabled = false;
+        }
         
         if (success) {
             // Clear cart
@@ -309,6 +410,16 @@ async function processPayment() {
         }
     } catch (error) {
         console.error('Error processing payment:', error);
+        
+        // Hide loading spinner
+        hideLoadingSpinner();
+        
+        // Re-enable the checkout button
+        const checkoutButton = document.querySelector('.checkout-modal-pay');
+        if (checkoutButton) {
+            checkoutButton.disabled = false;
+        }
+        
         showNotification('There was an error processing your order. Please try again later.', 'error');
         closeCheckoutModal();
     }
@@ -378,3 +489,5 @@ window.closeCheckoutModal = closeCheckoutModal;
 window.closeSuccessModal = closeSuccessModal;
 window.getCartItemCount = getCartItemCount;
 window.updateCartBadge = updateCartBadge;
+window.showLoadingSpinner = showLoadingSpinner;
+window.hideLoadingSpinner = hideLoadingSpinner;
