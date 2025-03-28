@@ -28,6 +28,10 @@ async function initializeJSONBins() {
             try {
                 await getBinData('SYSTEM_STATUS');
                 console.log('Verified bin access is working');
+                
+                // Fix ORDER_TRACKING bin if it's incorrectly initialized
+                await fixOrderTrackingBin();
+                
                 return true;
             } catch (error) {
                 console.error('Error accessing bins with fixed IDs:', error);
@@ -45,6 +49,10 @@ async function initializeJSONBins() {
             try {
                 await getBinData('SYSTEM_STATUS');
                 console.log('Verified bin access is working');
+                
+                // Fix ORDER_TRACKING bin if it's incorrectly initialized
+                await fixOrderTrackingBin();
+                
                 return true;
             } catch (error) {
                 console.warn('Stored bins are invalid, recreating them...');
@@ -57,7 +65,7 @@ async function initializeJSONBins() {
         await createBinIfNotExists('ORDERS', DEFAULT_ORDERS);
         await createBinIfNotExists('SYSTEM_STATUS', DEFAULT_SYSTEM_STATUS);
         await createBinIfNotExists('SYSTEM_LOG', DEFAULT_SYSTEM_LOG);
-        await createBinIfNotExists('ORDER_TRACKING', []);
+        await createBinIfNotExists('ORDER_TRACKING', []); // Initialize as empty array
         
         // Save bin IDs to localStorage
         localStorage.setItem('seoul_grill_bins', JSON.stringify(CONFIG.BINS));
@@ -84,6 +92,29 @@ async function initializeJSONBins() {
         }
         
         return false;
+    }
+}
+
+// Fix ORDER_TRACKING bin if it's incorrectly initialized
+async function fixOrderTrackingBin() {
+    try {
+        console.log('Checking ORDER_TRACKING bin structure...');
+        const trackingData = await getBinData('ORDER_TRACKING');
+        
+        // Check if trackingData is a nested array or not an array at all
+        if (Array.isArray(trackingData) && trackingData.length > 0 && Array.isArray(trackingData[0]) && trackingData[0].length === 0) {
+            console.log('ORDER_TRACKING bin has incorrect structure [[]], fixing it...');
+            await updateBinData('ORDER_TRACKING', []);
+            console.log('ORDER_TRACKING bin fixed successfully');
+        } else if (!Array.isArray(trackingData)) {
+            console.log('ORDER_TRACKING bin is not an array, fixing it...');
+            await updateBinData('ORDER_TRACKING', []);
+            console.log('ORDER_TRACKING bin fixed successfully');
+        } else {
+            console.log('ORDER_TRACKING bin structure is correct');
+        }
+    } catch (error) {
+        console.error('Error fixing ORDER_TRACKING bin:', error);
     }
 }
 
@@ -252,14 +283,17 @@ async function addOrderToTracking(order) {
             console.warn('Order missing customer_email, tracking may not work properly');
         }
         
-        // Get current tracking data - use the specific bin ID directly
+        // Get current tracking data
         let trackingData = [];
         try {
             // First try to get existing tracking data
             trackingData = await getBinData('ORDER_TRACKING');
             
-            // Ensure trackingData is an array
-            if (!Array.isArray(trackingData)) {
+            // Ensure trackingData is a proper array (not nested)
+            if (Array.isArray(trackingData) && trackingData.length > 0 && Array.isArray(trackingData[0])) {
+                console.warn('ORDER_TRACKING data is a nested array, fixing it');
+                trackingData = [];
+            } else if (!Array.isArray(trackingData)) {
                 console.warn('ORDER_TRACKING data is not an array, initializing as empty array');
                 trackingData = [];
             }
@@ -290,8 +324,12 @@ async function getOrderTrackingByEmail(email) {
         // Get all tracking data
         let trackingData = await getBinData('ORDER_TRACKING');
         
-        // Ensure trackingData is an array
-        if (!Array.isArray(trackingData)) {
+        // Ensure trackingData is a proper array (not nested)
+        if (Array.isArray(trackingData) && trackingData.length > 0 && Array.isArray(trackingData[0])) {
+            console.warn('ORDER_TRACKING data is a nested array, fixing it');
+            await updateBinData('ORDER_TRACKING', []);
+            return [];
+        } else if (!Array.isArray(trackingData)) {
             console.warn('ORDER_TRACKING data is not an array, returning empty array');
             return [];
         }
@@ -328,23 +366,26 @@ async function updateOrderStatus(orderId, newStatus, updatedBy = 'system') {
         // Update in ORDER_TRACKING bin
         let trackingData = await getBinData('ORDER_TRACKING');
         
-        // Ensure trackingData is an array
-        if (!Array.isArray(trackingData)) {
+        // Ensure trackingData is a proper array (not nested)
+        if (Array.isArray(trackingData) && trackingData.length > 0 && Array.isArray(trackingData[0])) {
+            console.warn('ORDER_TRACKING data is a nested array, fixing it');
+            trackingData = [];
+        } else if (!Array.isArray(trackingData)) {
             console.warn('ORDER_TRACKING data is not an array, initializing as empty array');
             trackingData = [];
-        } else {
-            const trackingIndex = trackingData.findIndex(order => order.order_id === orderId);
+        }
+        
+        const trackingIndex = trackingData.findIndex(order => order.order_id === orderId);
+        
+        if (trackingIndex !== -1) {
+            const oldStatus = trackingData[trackingIndex].status;
+            trackingData[trackingIndex].status = newStatus;
             
-            if (trackingIndex !== -1) {
-                const oldStatus = trackingData[trackingIndex].status;
-                trackingData[trackingIndex].status = newStatus;
-                
-                if (newStatus === 'processed' && oldStatus !== 'processed') {
-                    trackingData[trackingIndex].processed_at = new Date().toISOString();
-                }
-                
-                await updateBinData('ORDER_TRACKING', trackingData);
+            if (newStatus === 'processed' && oldStatus !== 'processed') {
+                trackingData[trackingIndex].processed_at = new Date().toISOString();
             }
+            
+            await updateBinData('ORDER_TRACKING', trackingData);
         }
         
         // Log status change
@@ -420,3 +461,4 @@ window.addOrderToTracking = addOrderToTracking;
 window.getOrderTrackingByEmail = getOrderTrackingByEmail;
 window.updateOrderStatus = updateOrderStatus;
 window.processQueuedOrders = processQueuedOrders;
+window.fixOrderTrackingBin = fixOrderTrackingBin;
