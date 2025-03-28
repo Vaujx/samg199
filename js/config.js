@@ -14,7 +14,8 @@ const CONFIG = {
        ORDERS: "67e54c15856fe97a50f3f456", // ORDERS Bin
        SYSTEM_STATUS: "67e54b6d8a456b79667dbebe", // SYSTEM_STATUS Bin
        SYSTEM_LOG: "67e54c2b896bc979a579877a", // SYSTEM_LOG Bin
-       SYSTEM_STATUS_HISTORY: "67e5fbdd561e97a50f4496" // SYSTEM_STATUS_HISTORY Bin
+       SYSTEM_STATUS_HISTORY: "67e5fbdd561e97a50f4496", // SYSTEM_STATUS_HISTORY Bin
+       ORDER_TRACKING: "67e60dcc8561e97a50f45273" // ORDER TRACKING Bin
    },
    // Default admin password
    ADMIN_PASSWORD: "admin123",
@@ -83,10 +84,13 @@ const DEFAULT_SYSTEM_STATUS_HISTORY = [];
 // Default orders
 const DEFAULT_ORDERS = [];
 
+// Default order tracking
+const DEFAULT_ORDER_TRACKING = [];
+
 // Chat responses
 const CHAT_RESPONSES = {
    delivery: "Delivery typically takes 30-45 minutes depending on your location. We prioritize keeping your Korean BBQ fresh and hot!",
-   payment: "We accept cash on delivery, credit/debit cards, and online payments through our secure checkout system.",
+   payment: "We currently only accept Cash on Delivery (COD) as a payment method.",
    hours: "Seoul Grill 199 is open daily from 11:00 AM to 10:00 PM. Last orders are accepted until 9:30 PM.",
    minimum: "Yes, we have a minimum order of ₱500 for delivery. There is no minimum for pickup orders.",
    dietary: "Yes! While our specialty is Korean BBQ, we do offer vegetarian banchan (side dishes) and can customize some sets to be vegetarian-friendly. Please specify your dietary requirements in the order notes.",
