@@ -3,68 +3,109 @@
  * This file handles all admin panel related functionality
  */
 
-// Declare CONFIG variable
-//const CONFIG = {
-    //ADMIN_PASSWORD: "password123" // Replace with a more secure password
-//};
+// Declare CONFIG variable with the correct password and bin IDs
+const CONFIG = {
+    ADMIN_PASSWORD: "admin123",
+    BIN_IDS: {
+        SYSTEM_STATUS: "67e54b6d8a456b79667dbebe", // The specific bin ID from your image
+        ORDERS: "orders_bin_id", // Replace with your actual orders bin ID
+        SYSTEM_LOG: "system_log_bin_id" // Replace with your actual system log bin ID
+    }
+};
+
+// Custom notification function in case the global one isn't available
+function localShowNotification(message, type) {
+    console.log(`NOTIFICATION: ${message} (${type})`);
+    // Try to use the global notification if available
+    if (typeof window.showNotification === 'function') {
+        window.showNotification(message, type);
+    } else {
+        // Create a simple notification if the global one isn't available
+        const notificationDiv = document.createElement('div');
+        notificationDiv.className = `notification ${type}`;
+        notificationDiv.innerHTML = `<p>${message}</p>`;
+        document.body.appendChild(notificationDiv);
+        
+        // Remove after 3 seconds
+        setTimeout(() => {
+            document.body.removeChild(notificationDiv);
+        }, 3000);
+    }
+}
 
 // Initialize admin panel
 document.addEventListener("DOMContentLoaded", () => {
     console.log("Initializing admin panel...");
-
-    // Initialize JSONBins
+    
+    // Direct setup of event listeners for login
+    setupLoginEventListeners();
+    
+    // Check if admin is already logged in
+    const isLoggedIn = localStorage.getItem("seoul_grill_admin_logged_in") === "true";
+    if (isLoggedIn) {
+        console.log("Admin already logged in, showing dashboard");
+        showAdminDashboard();
+    } else {
+        console.log("Admin not logged in, showing login form");
+    }
+    
+    // Initialize JSONBins if available
     if (typeof window.initializeJSONBins === 'function') {
         window.initializeJSONBins()
             .then(() => {
                 console.log("JSONBins initialized for admin panel");
-
-                // Add event listeners
+                // Setup other admin event listeners
                 setupAdminEventListeners();
-
-                // Check if admin is already logged in
-                const isLoggedIn = localStorage.getItem("seoul_grill_admin_logged_in") === "true";
-                if (isLoggedIn) {
-                    console.log("Admin already logged in, showing dashboard");
-                    showAdminDashboard();
-                } else {
-                    console.log("Admin not logged in, showing login form");
-                }
             })
             .catch((error) => {
                 console.error("Error initializing JSONBins for admin panel:", error);
-                if (typeof window.showNotification === 'function') {
-                    window.showNotification("There was an error initializing the admin panel. Please try again later.", "error");
-                }
+                localShowNotification("There was an error initializing the admin panel. Please try again later.", "error");
             });
     } else {
-        console.error("Required functions not loaded. Make sure jsonbin-api.js is loaded before admin.js");
-        if (typeof window.showNotification === 'function') {
-            window.showNotification("There was an error loading the admin panel. Please refresh the page.", "error");
-        }
+        console.warn("JSONBins initialization function not found. Some features may not work.");
     }
 });
 
-// Set up admin event listeners
-function setupAdminEventListeners() {
-    console.log("Setting up admin event listeners");
+// Set up login event listeners separately to ensure they're always attached
+function setupLoginEventListeners() {
+    console.log("Setting up login event listeners");
 
     // Login button
     const loginButton = document.getElementById("login-button");
     if (loginButton) {
+        // Remove any existing event listeners
+        loginButton.removeEventListener("click", handleAdminLogin);
+        // Add new event listener
         loginButton.addEventListener("click", handleAdminLogin);
         console.log("Login button event listener added");
+    } else {
+        console.error("Login button not found in the DOM");
     }
 
     // Enter key in password field
     const passwordInput = document.getElementById("admin_password");
     if (passwordInput) {
-        passwordInput.addEventListener("keypress", (event) => {
-            if (event.key === "Enter") {
-                handleAdminLogin();
-            }
-        });
+        // Remove any existing event listeners
+        passwordInput.removeEventListener("keypress", handlePasswordKeypress);
+        // Add new event listener
+        passwordInput.addEventListener("keypress", handlePasswordKeypress);
         console.log("Password input event listener added");
+    } else {
+        console.error("Password input not found in the DOM");
     }
+}
+
+// Handle password keypress
+function handlePasswordKeypress(event) {
+    if (event.key === "Enter") {
+        console.log("Enter key pressed in password field");
+        handleAdminLogin();
+    }
+}
+
+// Set up admin event listeners
+function setupAdminEventListeners() {
+    console.log("Setting up admin event listeners");
 
     // Logout button
     const logoutButton = document.getElementById("logout-button");
@@ -86,14 +127,10 @@ function setupAdminEventListeners() {
                 await loadSystemStatus();
                 await loadQueuedOrders();
                 await loadSystemStatusHistory();
-                if (typeof window.showNotification === 'function') {
-                    window.showNotification("System brought online successfully", "success");
-                }
+                localShowNotification("System brought online successfully", "success");
             } catch (error) {
                 console.error("Error bringing system online:", error);
-                if (typeof window.showNotification === 'function') {
-                    window.showNotification("Error bringing system online. Please try again.", "error");
-                }
+                localShowNotification("Error bringing system online. Please try again.", "error");
             }
         });
         console.log("Online button event listener added");
@@ -108,14 +145,10 @@ function setupAdminEventListeners() {
                 await loadSystemStatus();
                 await loadQueuedOrders();
                 await loadSystemStatusHistory();
-                if (typeof window.showNotification === 'function') {
-                    window.showNotification("System taken offline successfully", "success");
-                }
+                localShowNotification("System taken offline successfully", "success");
             } catch (error) {
                 console.error("Error taking system offline:", error);
-                if (typeof window.showNotification === 'function') {
-                    window.showNotification("Error taking system offline. Please try again.", "error");
-                }
+                localShowNotification("Error taking system offline. Please try again.", "error");
             }
         });
         console.log("Offline button event listener added");
@@ -140,18 +173,23 @@ function setupAdminEventListeners() {
 function handleAdminLogin() {
     console.log("Handling admin login...");
     const passwordInput = document.getElementById("admin_password");
-    if (passwordInput && passwordInput.value === CONFIG.ADMIN_PASSWORD) {
+    
+    if (!passwordInput) {
+        console.error("Password input not found");
+        return;
+    }
+    
+    console.log("Password entered:", passwordInput.value);
+    console.log("Expected password:", CONFIG.ADMIN_PASSWORD);
+    
+    if (passwordInput.value === CONFIG.ADMIN_PASSWORD) {
         console.log("Admin login successful");
         localStorage.setItem("seoul_grill_admin_logged_in", "true");
         showAdminDashboard();
-        if (typeof window.showNotification === 'function') {
-            window.showNotification("Login successful", "success");
-        }
+        localShowNotification("Login successful", "success");
     } else {
         console.log("Admin login failed - incorrect password");
-        if (typeof window.showNotification === 'function') {
-            window.showNotification("Invalid password. Please try again.", "error");
-        }
+        localShowNotification("Invalid password. Please try again.", "error");
     }
 }
 
@@ -161,9 +199,7 @@ function handleAdminLogout(e) {
     console.log("Handling admin logout...");
     localStorage.removeItem("seoul_grill_admin_logged_in");
     hideAdminDashboard();
-    if (typeof window.showNotification === 'function') {
-        window.showNotification("Logged out successfully", "info");
-    }
+    localShowNotification("Logged out successfully", "info");
     console.log("Admin logged out successfully");
 }
 
@@ -175,8 +211,19 @@ function isAdminLoggedIn() {
 // Show admin dashboard
 async function showAdminDashboard() {
     console.log("Showing admin dashboard");
-    document.getElementById("admin-login").style.display = "none";
-    document.getElementById("admin-dashboard").style.display = "block";
+    const loginElement = document.getElementById("admin-login");
+    const dashboardElement = document.getElementById("admin-dashboard");
+    
+    if (!loginElement || !dashboardElement) {
+        console.error("Required elements not found:", {
+            loginElement: !!loginElement,
+            dashboardElement: !!dashboardElement
+        });
+        return;
+    }
+    
+    loginElement.style.display = "none";
+    dashboardElement.style.display = "block";
 
     // Load dashboard data
     try {
@@ -185,25 +232,130 @@ async function showAdminDashboard() {
         await loadSystemStatusHistory();
     } catch (error) {
         console.error("Error loading dashboard data:", error);
-        if (typeof window.showNotification === 'function') {
-            window.showNotification("Error loading dashboard data. Some information may be missing.", "warning");
-        }
+        localShowNotification("Error loading dashboard data. Some information may be missing.", "warning");
     }
 }
 
 // Hide admin dashboard
 function hideAdminDashboard() {
     console.log("Hiding admin dashboard");
-    document.getElementById("admin-login").style.display = "block";
-    document.getElementById("admin-dashboard").style.display = "none";
+    const loginElement = document.getElementById("admin-login");
+    const dashboardElement = document.getElementById("admin-dashboard");
+    
+    if (!loginElement || !dashboardElement) {
+        console.error("Required elements not found");
+        return;
+    }
+    
+    loginElement.style.display = "block";
+    dashboardElement.style.display = "none";
+}
+
+// Custom function to get bin data with specific bin ID
+async function getSpecificBinData(binType) {
+    console.log(`Getting data for bin type: ${binType}`);
+    
+    // Get the bin ID from CONFIG
+    const binId = CONFIG.BIN_IDS[binType];
+    if (!binId) {
+        console.error(`No bin ID configured for ${binType}`);
+        throw new Error(`No bin ID configured for ${binType}`);
+    }
+    
+    console.log(`Using bin ID: ${binId} for ${binType}`);
+    
+    // Check if we have a direct getBinById function
+    if (typeof window.getBinById === 'function') {
+        return await window.getBinById(binId);
+    }
+    
+    // Otherwise use the standard getBinData function
+    if (typeof window.getBinData === 'function') {
+        return await window.getBinData(binType);
+    }
+    
+    // If neither function is available, use fetch directly
+    const response = await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            // Add any required API keys here if needed
+        }
+    });
+    
+    if (!response.ok) {
+        throw new Error(`Failed to fetch bin data: ${response.status} ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    return data.record; // JSONBin API returns data in a 'record' property
+}
+
+// Custom function to update bin data with specific bin ID
+async function updateSpecificBinData(binType, data) {
+    console.log(`Updating data for bin type: ${binType}`, data);
+    
+    // Get the bin ID from CONFIG
+    const binId = CONFIG.BIN_IDS[binType];
+    if (!binId) {
+        console.error(`No bin ID configured for ${binType}`);
+        throw new Error(`No bin ID configured for ${binType}`);
+    }
+    
+    console.log(`Using bin ID: ${binId} for ${binType}`);
+    
+    // Check if we have a direct updateBinById function
+    if (typeof window.updateBinById === 'function') {
+        return await window.updateBinById(binId, data);
+    }
+    
+    // Otherwise use the standard updateBinData function
+    if (typeof window.updateBinData === 'function') {
+        return await window.updateBinData(binType, data);
+    }
+    
+    // If neither function is available, use fetch directly
+    const response = await fetch(`https://api.jsonbin.io/v3/b/${binId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+            // Add any required API keys here if needed
+        },
+        body: JSON.stringify(data)
+    });
+    
+    if (!response.ok) {
+        throw new Error(`Failed to update bin data: ${response.status} ${response.statusText}`);
+    }
+    
+    const responseData = await response.json();
+    return responseData.record; // JSONBin API returns updated data in a 'record' property
 }
 
 // Load system status
 async function loadSystemStatus() {
     try {
         console.log("Loading system status...");
-        const systemStatus = await window.getBinData("SYSTEM_STATUS");
+        let systemStatus;
+        
+        try {
+            // Try to get the system status using our specific bin ID
+            systemStatus = await getSpecificBinData("SYSTEM_STATUS");
+            console.log("System status loaded:", systemStatus);
+        } catch (error) {
+            console.warn("Error loading system status from specific bin, falling back to standard method:", error);
+            
+            // Fall back to the standard method
+            if (typeof window.getBinData === 'function') {
+                systemStatus = await window.getBinData("SYSTEM_STATUS");
+            } else {
+                console.warn("getBinData function not available, using mock data");
+                systemStatus = { status: 1 }; // Mock data
+            }
+        }
+        
         const systemOnline = systemStatus.status === 1;
+        console.log("System online status:", systemOnline, "Raw status value:", systemStatus.status);
 
         // Update system status indicator
         const statusElement = document.getElementById("system-status");
@@ -236,7 +388,23 @@ async function loadSystemStatus() {
 async function loadQueuedOrders() {
     try {
         console.log("Loading queued orders...");
-        const orders = await window.getBinData("ORDERS");
+        let orders;
+        
+        try {
+            // Try to get orders using our specific bin ID
+            orders = await getSpecificBinData("ORDERS");
+        } catch (error) {
+            console.warn("Error loading orders from specific bin, falling back to standard method:", error);
+            
+            // Fall back to the standard method
+            if (typeof window.getBinData === 'function') {
+                orders = await window.getBinData("ORDERS");
+            } else {
+                console.warn("getBinData function not available, using mock data");
+                orders = []; // Mock data
+            }
+        }
+        
         const queuedOrders = orders.filter((order) => order.status === "queued");
 
         // Update queue count
@@ -317,7 +485,23 @@ function toggleOrderDetails(orderId) {
 async function loadSystemStatusHistory() {
     try {
         console.log("Loading system status history...");
-        const systemLog = await window.getBinData("SYSTEM_LOG");
+        let systemLog;
+        
+        try {
+            // Try to get system log using our specific bin ID
+            systemLog = await getSpecificBinData("SYSTEM_LOG");
+        } catch (error) {
+            console.warn("Error loading system log from specific bin, falling back to standard method:", error);
+            
+            // Fall back to the standard method
+            if (typeof window.getBinData === 'function') {
+                systemLog = await window.getBinData("SYSTEM_LOG");
+            } else {
+                console.warn("getBinData function not available, using mock data");
+                systemLog = []; // Mock data
+            }
+        }
+        
         const statusHistory = systemLog
             .filter((entry) => entry.action === "system_status_updated")
             .slice(-5); // Get last 5 entries
@@ -366,35 +550,109 @@ async function setSystemStatus(isOnline, performedBy = "system") {
         console.log(`Setting system status to ${isOnline ? "online" : "offline"}...`);
         
         // Get current system status
-        const systemStatus = await window.getBinData("SYSTEM_STATUS");
+        let systemStatus;
+        try {
+            // Try to get the system status using our specific bin ID
+            systemStatus = await getSpecificBinData("SYSTEM_STATUS");
+        } catch (error) {
+            console.warn("Error loading system status from specific bin, falling back to standard method:", error);
+            
+            if (typeof window.getBinData === 'function') {
+                systemStatus = await window.getBinData("SYSTEM_STATUS");
+            } else {
+                console.error("Cannot get system status data");
+                throw new Error("Cannot get system status data");
+            }
+        }
         
         // Update status
         systemStatus.status = isOnline ? 1 : 0;
         systemStatus.updated_by = performedBy;
         systemStatus.updated_at = new Date().toISOString();
         
+        console.log("Updating system status with:", systemStatus);
+        
         // Update system status in JSONBin
-        await window.updateBinData("SYSTEM_STATUS", systemStatus);
+        try {
+            // Try to update using our specific bin ID
+            await updateSpecificBinData("SYSTEM_STATUS", systemStatus);
+        } catch (error) {
+            console.warn("Error updating system status with specific bin, falling back to standard method:", error);
+            
+            if (typeof window.updateBinData === 'function') {
+                await window.updateBinData("SYSTEM_STATUS", systemStatus);
+            } else {
+                console.error("Cannot update system status data");
+                throw new Error("Cannot update system status data");
+            }
+        }
         
         // Log status change
-        const systemLog = await window.getBinData("SYSTEM_LOG");
+        let systemLog;
+        try {
+            // Try to get the system log using our specific bin ID
+            systemLog = await getSpecificBinData("SYSTEM_LOG");
+        } catch (error) {
+            console.warn("Error loading system log from specific bin, falling back to standard method:", error);
+            
+            if (typeof window.getBinData === 'function') {
+                systemLog = await window.getBinData("SYSTEM_LOG");
+            } else {
+                console.warn("Cannot get system log data, creating new log");
+                systemLog = [];
+            }
+        }
+        
         systemLog.push({
             action: "system_status_updated",
             description: `System status changed to ${isOnline ? "online" : "offline"}`,
             performed_by: performedBy,
             performed_at: new Date().toISOString()
         });
-        await window.updateBinData("SYSTEM_LOG", systemLog);
+        
+        // Update system log in JSONBin
+        try {
+            // Try to update using our specific bin ID
+            await updateSpecificBinData("SYSTEM_LOG", systemLog);
+        } catch (error) {
+            console.warn("Error updating system log with specific bin, falling back to standard method:", error);
+            
+            if (typeof window.updateBinData === 'function') {
+                await window.updateBinData("SYSTEM_LOG", systemLog);
+            } else {
+                console.error("Cannot update system log data");
+                // Don't throw here, as the main status update was successful
+            }
+        }
         
         // Process queued orders if bringing system online
         if (isOnline) {
-            const queuedOrders = await window.getBinData("ORDERS");
+            let queuedOrders;
+            try {
+                // Try to get orders using our specific bin ID
+                queuedOrders = await getSpecificBinData("ORDERS");
+            } catch (error) {
+                console.warn("Error loading orders from specific bin, falling back to standard method:", error);
+                
+                if (typeof window.getBinData === 'function') {
+                    queuedOrders = await window.getBinData("ORDERS");
+                } else {
+                    console.warn("Cannot get orders data");
+                    queuedOrders = [];
+                }
+            }
+            
             const queuedCount = queuedOrders.filter(order => order.status === "queued").length;
             
             if (queuedCount > 0) {
                 console.log(`Processing ${queuedCount} queued orders...`);
-                const results = await window.processQueuedOrders();
-                displayProcessingResults(results);
+                let results;
+                if (typeof window.processQueuedOrders === 'function') {
+                    results = await window.processQueuedOrders();
+                    displayProcessingResults(results);
+                } else {
+                    console.warn("processQueuedOrders function not available");
+                }
             }
         }
         
@@ -442,12 +700,25 @@ function formatDate(dateString) {
 async function exportOrders() {
     try {
         console.log("Exporting orders...");
-        const orders = await window.getBinData("ORDERS");
+        let orders;
+        
+        try {
+            // Try to get orders using our specific bin ID
+            orders = await getSpecificBinData("ORDERS");
+        } catch (error) {
+            console.warn("Error loading orders from specific bin, falling back to standard method:", error);
+            
+            if (typeof window.getBinData === 'function') {
+                orders = await window.getBinData("ORDERS");
+            } else {
+                console.error("Export functionality not available");
+                localShowNotification("Export functionality not available", "error");
+                return;
+            }
+        }
 
         if (orders.length === 0) {
-            if (typeof window.showNotification === 'function') {
-                window.showNotification("No orders to export", "info");
-            }
+            localShowNotification("No orders to export", "info");
             return;
         }
 
@@ -506,15 +777,11 @@ async function exportOrders() {
             downloadBackup.style.display = "inline-flex";
         }
 
-        if (typeof window.showNotification === 'function') {
-            window.showNotification("Orders exported successfully", "success");
-        }
+        localShowNotification("Orders exported successfully", "success");
         console.log("Orders exported successfully");
     } catch (error) {
         console.error("Error exporting orders:", error);
-        if (typeof window.showNotification === 'function') {
-            window.showNotification("Error exporting orders. Please try again.", "error");
-        }
+        localShowNotification("Error exporting orders. Please try again.", "error");
     }
 }
 
@@ -522,9 +789,7 @@ async function exportOrders() {
 async function importOrders() {
     const fileInput = document.getElementById("import-file");
     if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
-        if (typeof window.showNotification === 'function') {
-            window.showNotification("Please select a file to import", "warning");
-        }
+        localShowNotification("Please select a file to import", "warning");
         return;
     }
 
@@ -534,6 +799,22 @@ async function importOrders() {
 
     reader.onload = async (e) => {
         try {
+            let existingOrders;
+            
+            try {
+                // Try to get orders using our specific bin ID
+                existingOrders = await getSpecificBinData("ORDERS");
+            } catch (error) {
+                console.warn("Error loading orders from specific bin, falling back to standard method:", error);
+                
+                if (typeof window.getBinData === 'function') {
+                    existingOrders = await window.getBinData("ORDERS");
+                } else {
+                    console.error("Import functionality not available");
+                    throw new Error("Import functionality not available");
+                }
+            }
+            
             const content = e.target.result;
             const lines = content.split("\n");
 
@@ -541,8 +822,7 @@ async function importOrders() {
             let importedCount = 0;
             let orderItems = {};
 
-            // Get current orders
-            const existingOrders = await window.getBinData("ORDERS");
+            // Get existing order IDs
             const existingOrderIds = new Set(existingOrders.map((order) => order.order_id));
 
             for (const line of lines) {
@@ -614,7 +894,19 @@ async function importOrders() {
             }
 
             // Update orders in JSONBin
-            await window.updateBinData("ORDERS", existingOrders);
+            try {
+                // Try to update using our specific bin ID
+                await updateSpecificBinData("ORDERS", existingOrders);
+            } catch (error) {
+                console.warn("Error updating orders with specific bin, falling back to standard method:", error);
+                
+                if (typeof window.updateBinData === 'function') {
+                    await window.updateBinData("ORDERS", existingOrders);
+                } else {
+                    console.error("Cannot update orders data");
+                    throw new Error("Cannot update orders data");
+                }
+            }
 
             // Show import results
             const importResults = document.getElementById("import-results");
@@ -628,9 +920,7 @@ async function importOrders() {
             // Reload queued orders
             await loadQueuedOrders();
 
-            if (typeof window.showNotification === 'function') {
-                window.showNotification(`Successfully imported ${importedCount} orders`, "success");
-            }
+            localShowNotification(`Successfully imported ${importedCount} orders`, "success");
             console.log("Orders imported successfully:", importedCount, "orders");
         } catch (error) {
             console.error("Error importing orders:", error);
@@ -644,9 +934,7 @@ async function importOrders() {
                 importMessage.innerHTML = `<i class="fas fa-times-circle"></i> <strong>Error:</strong> ${error.message}`;
             }
 
-            if (typeof window.showNotification === 'function') {
-                window.showNotification(`Error importing orders: ${error.message}`, "error");
-            }
+            localShowNotification(`Error importing orders: ${error.message}`, "error");
         }
     };
 
@@ -661,6 +949,36 @@ function updateFileName(input) {
         fileNameElement.textContent = fileName;
     }
 }
+
+// Add CSS for local notifications if needed
+function addNotificationStyles() {
+    if (document.getElementById('local-notification-styles')) return;
+    
+    const style = document.createElement('style');
+    style.id = 'local-notification-styles';
+    style.textContent = `
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            color: white;
+            z-index: 1000;
+            animation: fadeIn 0.3s, fadeOut 0.3s 2.7s;
+        }
+        .notification.success { background-color: #4CAF50; }
+        .notification.error { background-color: #F44336; }
+        .notification.info { background-color: #2196F3; }
+        .notification.warning { background-color: #FF9800; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+    `;
+    document.head.appendChild(style);
+}
+
+// Initialize notification styles
+addNotificationStyles();
 
 // Make functions available globally
 window.toggleOrderDetails = toggleOrderDetails;
@@ -677,3 +995,6 @@ window.displayProcessingResults = displayProcessingResults;
 window.exportOrders = exportOrders;
 window.importOrders = importOrders;
 window.updateFileName = updateFileName;
+window.handlePasswordKeypress = handlePasswordKeypress;
+window.getSpecificBinData = getSpecificBinData;
+window.updateSpecificBinData = updateSpecificBinData;
