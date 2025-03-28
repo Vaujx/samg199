@@ -14,6 +14,17 @@ async function initializeAdminPanel() {
             return;
         }
         
+        // Set specific bin ID for system status history
+        if (CONFIG && CONFIG.BINS) {
+            CONFIG.BINS.SYSTEM_STATUS_HISTORY = "67e5fbdd8561e97a50f44996";
+            console.log('Set SYSTEM_STATUS_HISTORY bin ID:', CONFIG.BINS.SYSTEM_STATUS_HISTORY);
+        } else {
+            // Initialize CONFIG.BINS if it doesn't exist
+            if (!CONFIG) CONFIG = {};
+            if (!CONFIG.BINS) CONFIG.BINS = {};
+            CONFIG.BINS.SYSTEM_STATUS_HISTORY = "67e5fbdd8561e97a50f44996";
+        }
+        
         // Initialize JSONBins if not already initialized
         await initializeJSONBins();
         
@@ -59,6 +70,8 @@ function authenticateAdmin(event) {
     
     const username = document.getElementById('admin-username').value;
     const password = document.getElementById('admin-password').value;
+    
+    console.log('Attempting login with:', username, password);
     
     // Simple authentication for demo purposes
     // In a real application, this should be done securely on the server
@@ -113,14 +126,95 @@ async function initializeSystemStatusHistory() {
     try {
         console.log('Initializing system status history...');
         
-        // Get system log
-        const systemLog = await getBinData('SYSTEM_LOG');
+        // Get system status history
+        let statusHistory = [];
         
-        // Filter status change events
-        const statusChanges = systemLog.filter(log => log.action === 'system_status_updated');
+        try {
+            // Try to get history from the specific bin
+            const response = await fetch(`${CONFIG.JSONBIN_URL}/${CONFIG.BINS.SYSTEM_STATUS_HISTORY}/latest`, {
+                method: 'GET',
+                headers: {
+                    'X-Master-Key': CONFIG.MASTER_KEY
+                }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                statusHistory = data.record;
+                
+                // Ensure statusHistory is an array
+                if (!Array.isArray(statusHistory)) {
+                    console.warn('SYSTEM_STATUS_HISTORY data is not an array, initializing as empty array');
+                    statusHistory = [];
+                }
+            } else {
+                console.warn('Failed to get SYSTEM_STATUS_HISTORY data, initializing as empty array');
+                statusHistory = [];
+                
+                // Initialize the bin with an empty array
+                await fetch(`${CONFIG.JSONBIN_URL}/${CONFIG.BINS.SYSTEM_STATUS_HISTORY}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Master-Key': CONFIG.MASTER_KEY
+                    },
+                    body: JSON.stringify([])
+                });
+            }
+        } catch (error) {
+            console.warn('Error getting SYSTEM_STATUS_HISTORY data, initializing as empty array:', error);
+            statusHistory = [];
+            
+            // Initialize the bin with an empty array
+            try {
+                await fetch(`${CONFIG.JSONBIN_URL}/${CONFIG.BINS.SYSTEM_STATUS_HISTORY}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Master-Key': CONFIG.MASTER_KEY
+                    },
+                    body: JSON.stringify([])
+                });
+            } catch (e) {
+                console.error('Error initializing SYSTEM_STATUS_HISTORY bin:', e);
+            }
+        }
+        
+        // If no history in the specific bin, try to get from system log
+        if (statusHistory.length === 0) {
+            try {
+                // Get system log
+                const systemLog = await getBinData('SYSTEM_LOG');
+                
+                // Filter status change events
+                const statusChanges = systemLog.filter(log => log.action === 'system_status_updated');
+                
+                // Add to status history
+                statusHistory = statusChanges.map(change => ({
+                    status: change.description.includes('online') ? 1 : 0,
+                    changed_at: change.performed_at,
+                    changed_by: change.performed_by,
+                    description: change.description
+                }));
+                
+                // Save to the specific bin
+                if (statusHistory.length > 0) {
+                    await fetch(`${CONFIG.JSONBIN_URL}/${CONFIG.BINS.SYSTEM_STATUS_HISTORY}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Master-Key': CONFIG.MASTER_KEY
+                        },
+                        body: JSON.stringify(statusHistory)
+                    });
+                }
+            } catch (error) {
+                console.error('Error getting status history from system log:', error);
+            }
+        }
         
         // Sort by date (newest first)
-        statusChanges.sort((a, b) => new Date(b.performed_at) - new Date(a.performed_at));
+        statusHistory.sort((a, b) => new Date(b.changed_at) - new Date(a.changed_at));
         
         // Get history container
         const historyContainer = document.getElementById('system-status-history');
@@ -130,23 +224,23 @@ async function initializeSystemStatusHistory() {
         historyContainer.innerHTML = '';
         
         // Add history items
-        if (statusChanges.length === 0) {
+        if (statusHistory.length === 0) {
             historyContainer.innerHTML = '<p>No status changes recorded.</p>';
         } else {
             const historyList = document.createElement('ul');
             historyList.className = 'status-history-list';
             
-            statusChanges.forEach(change => {
+            statusHistory.forEach(change => {
                 const item = document.createElement('li');
-                const date = new Date(change.performed_at);
+                const date = new Date(change.changed_at);
                 const formattedDate = `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
-                const status = change.description.includes('online') ? 'online' : 'offline';
+                const status = change.status === 1 ? 'online' : 'offline';
                 
                 item.innerHTML = `
                     <span class="status-dot ${status}"></span>
                     <span class="status-text">System ${status}</span>
                     <span class="status-date">${formattedDate}</span>
-                    <span class="status-user">by ${change.performed_by}</span>
+                    <span class="status-user">by ${change.changed_by}</span>
                 `;
                 
                 historyList.appendChild(item);
@@ -189,6 +283,49 @@ async function updateSystemStatus(status) {
         });
         await updateBinData('SYSTEM_LOG', systemLog);
         
+        // Add to status history
+        try {
+            // Get current history
+            const response = await fetch(`${CONFIG.JSONBIN_URL}/${CONFIG.BINS.SYSTEM_STATUS_HISTORY}/latest`, {
+                method: 'GET',
+                headers: {
+                    'X-Master-Key': CONFIG.MASTER_KEY
+                }
+            });
+            
+            let statusHistory = [];
+            
+            if (response.ok) {
+                const data = await response.json();
+                statusHistory = data.record;
+                
+                // Ensure statusHistory is an array
+                if (!Array.isArray(statusHistory)) {
+                    statusHistory = [];
+                }
+            }
+            
+            // Add new status change
+            statusHistory.push({
+                status: status,
+                changed_at: new Date().toISOString(),
+                changed_by: 'admin',
+                description: `System status changed to ${status === 1 ? 'online' : 'offline'}`
+            });
+            
+            // Update history bin
+            await fetch(`${CONFIG.JSONBIN_URL}/${CONFIG.BINS.SYSTEM_STATUS_HISTORY}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Master-Key': CONFIG.MASTER_KEY
+                },
+                body: JSON.stringify(statusHistory)
+            });
+        } catch (error) {
+            console.error('Error updating status history:', error);
+        }
+        
         // Refresh status history
         await initializeSystemStatusHistory();
         
@@ -217,7 +354,17 @@ async function initializeOrderManagement() {
         console.log('Initializing order management...');
         
         // Get orders
-        const orders = await getBinData('ORDERS');
+        let orders = [];
+        try {
+            orders = await getBinData('ORDERS');
+            if (!Array.isArray(orders)) {
+                console.warn('ORDERS data is not an array, initializing as empty array');
+                orders = [];
+            }
+        } catch (error) {
+            console.error('Error getting orders:', error);
+            orders = [];
+        }
         
         // Sort by date (newest first)
         orders.sort((a, b) => new Date(b.queued_at) - new Date(a.queued_at));
@@ -330,7 +477,17 @@ async function viewOrder(orderId) {
         console.log(`Viewing order ${orderId}...`);
         
         // Get orders
-        const orders = await getBinData('ORDERS');
+        let orders = [];
+        try {
+            orders = await getBinData('ORDERS');
+            if (!Array.isArray(orders)) {
+                console.warn('ORDERS data is not an array, initializing as empty array');
+                orders = [];
+            }
+        } catch (error) {
+            console.error('Error getting orders:', error);
+            orders = [];
+        }
         
         // Find order
         const order = orders.find(o => o.order_id === orderId);
@@ -412,8 +569,14 @@ async function processOrder(orderId) {
     try {
         console.log(`Processing order ${orderId}...`);
         
+        // Show loading spinner
+        showLoadingSpinner(`Processing order #${orderId}...`);
+        
         // Update order status
         await updateOrderStatus(orderId, 'processed', 'admin');
+        
+        // Hide loading spinner
+        hideLoadingSpinner();
         
         // Refresh order management
         await initializeOrderManagement();
@@ -424,6 +587,10 @@ async function processOrder(orderId) {
         console.log(`Order ${orderId} processed successfully`);
     } catch (error) {
         console.error(`Error processing order ${orderId}:`, error);
+        
+        // Hide loading spinner
+        hideLoadingSpinner();
+        
         showNotification('Error processing order. Please try again later.', 'error');
     }
 }
@@ -465,7 +632,17 @@ async function initializeSystemLog() {
         console.log('Initializing system log...');
         
         // Get system log
-        const systemLog = await getBinData('SYSTEM_LOG');
+        let systemLog = [];
+        try {
+            systemLog = await getBinData('SYSTEM_LOG');
+            if (!Array.isArray(systemLog)) {
+                console.warn('SYSTEM_LOG data is not an array, initializing as empty array');
+                systemLog = [];
+            }
+        } catch (error) {
+            console.error('Error getting system log:', error);
+            systemLog = [];
+        }
         
         // Sort by date (newest first)
         systemLog.sort((a, b) => new Date(b.performed_at) - new Date(a.performed_at));
@@ -639,17 +816,25 @@ window.initializeSystemLog = initializeSystemLog;
 document.addEventListener('DOMContentLoaded', function() {
     // Check if this is the admin page
     if (document.getElementById('admin-panel-container')) {
+        console.log('Admin page detected, initializing...');
+        
         if (isAuthenticated()) {
+            console.log('User is authenticated, showing admin panel');
             showAdminPanel();
             initializeAdminPanel();
         } else {
+            console.log('User is not authenticated, showing login form');
             showLoginForm();
         }
         
         // Add event listener to login form
         const loginForm = document.getElementById('admin-login-form');
         if (loginForm) {
-            loginForm.addEventListener('submit', authenticateAdmin);
+            console.log('Adding event listener to login form');
+            loginForm.addEventListener('submit', function(event) {
+                event.preventDefault();
+                authenticateAdmin(event);
+            });
         }
         
         // Add event listener to logout button
