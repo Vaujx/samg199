@@ -1,3 +1,5 @@
+// Updated admin.js file with fixed login functionality
+
 /**
  * Admin Panel Functionality
  * This file handles all admin panel related functionality
@@ -88,20 +90,11 @@ function setupLoginEventListeners() {
         // Remove any existing event listeners
         loginButton.removeEventListener("click", handleAdminLogin);
         // Add new event listener
-        loginButton.addEventListener('click', function() {
-    const enteredPassword = adminPasswordInput.value.trim().toLowerCase(); // Trim and lowercase
-    const correctPassword = ADMIN_PASSWORD.toLowerCase();
-
-    if (enteredPassword === correctPassword) {
-        adminLoginSection.style.display = 'none';
-        adminDashboardSection.style.display = 'block';
-        loadQueue();
-        loadHistory();
-        updateSystemStatus();
+        loginButton.addEventListener("click", handleAdminLogin);
+        console.log("Login button event listener added");
     } else {
-        alert('Incorrect password. Please try again.');
+        console.error("Login button not found in the DOM");
     }
-});
 
     // Enter key in password field
     const passwordInput = document.getElementById("admin_password");
@@ -200,10 +193,13 @@ function handleAdminLogin() {
         return;
     }
     
-    console.log("Password entered:", passwordInput.value);
-    console.log("Expected password:", CONFIG.ADMIN_PASSWORD);
+    const enteredPassword = passwordInput.value.trim();
+    const correctPassword = CONFIG.ADMIN_PASSWORD;
     
-    if (passwordInput.value === CONFIG.ADMIN_PASSWORD) {
+    console.log("Password entered:", enteredPassword);
+    console.log("Expected password:", correctPassword);
+    
+    if (enteredPassword === correctPassword) {
         console.log("Admin login successful");
         localStorage.setItem("seoul_grill_admin_logged_in", "true");
         showAdminDashboard();
@@ -300,7 +296,7 @@ async function getSpecificBinData(binType) {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json',
-            // Add any required API keys here if needed
+            'X-Master-Key': CONFIG.MASTER_KEY
         }
     });
     
@@ -340,7 +336,7 @@ async function updateSpecificBinData(binType, data) {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json',
-            // Add any required API keys here if needed
+            'X-Master-Key': CONFIG.MASTER_KEY
         },
         body: JSON.stringify(data)
     });
