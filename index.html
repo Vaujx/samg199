@@ -120,10 +120,22 @@
           </div>
           <p>Please confirm your order:</p>
           <div id="checkout-total" class="checkout-modal-total">₱0.00</div>
+          
+          <!-- Email input for order tracking -->
+          <div id="customer-email-container" class="form-group" style="margin: 20px 0;">
+              <label for="customer-email">Email Address (for order tracking):</label>
+              <input type="email" id="customer-email" class="form-control" required placeholder="your.email@example.com">
+              <p class="form-help">We'll use this email to send you order updates and for tracking your order.</p>
+          </div>
+          
+          <div class="payment-method">
+              <p><strong>Payment Method:</strong> Cash on Delivery (COD)</p>
+          </div>
+          
           <div class="checkout-modal-buttons">
               <button class="checkout-modal-button checkout-modal-cancel" onclick="closeCheckoutModal()">Cancel</button>
               <button class="checkout-modal-button checkout-modal-pay" onclick="processPayment()">
-                  <span id="checkout-button-text">Pay Now</span>
+                  <span id="checkout-button-text">Place Order (COD)</span>
               </button>
           </div>
       </div>
@@ -133,12 +145,24 @@
   <div id="successModal" class="success-modal">
       <div class="success-modal-content">
           <i class="fas fa-check-circle success-icon"></i>
-          <h2 id="success-title" class="success-title">Payment Successful!</h2>
+          <h2 id="success-title" class="success-title">Order Placed Successfully!</h2>
           <p id="success-message" class="success-message">
               Thank you for your order. Your delivery will arrive shortly.
           </p>
-          <button class="success-button" onclick="closeSuccessModal()">Continue</button>
+          <div class="success-actions">
+              <a id="tracking-link" href="order-tracking.html" class="tracking-button" style="display: none;">
+                  <i class="fas fa-search"></i> Track Your Order
+              </a>
+              <button class="success-button" onclick="closeSuccessModal()">Continue Shopping</button>
+          </div>
       </div>
+  </div>
+
+  <!-- Order Tracking Link in Footer -->
+  <div class="order-tracking-banner">
+      <a href="order-tracking.html" class="order-tracking-link">
+          <i class="fas fa-search"></i> Track Your Order
+      </a>
   </div>
 
   <!-- Footer -->
@@ -154,6 +178,7 @@
               <ul>
                   <li><button class="btn"><a href="index.html">Home</a></button></li>
                   <li><button class="btn"><a href="about.html">About Us</a></button></li>
+                  <li><button class="btn"><a href="order-tracking.html">Track Order</a></button></li>
               </ul>
           </div>
           <div class="footer-section">
@@ -170,13 +195,12 @@
       </div>
   </footer>
 
-  <!-- Load scripts in the correct order -->
-<script src="js/config.js"></script>
-<script src="js/utils.js"></script>
-<script src="js/jsonbin-api.js"></script>
-<script src="js/products.js"></script>
-<script src="js/cart.js"></script>
-<script src="js/chat.js"></script>
-<script src="js/main.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/jsonbin-api.js"></script>
+  <script src="js/products.js"></script>
+  <script src="js/cart.js"></script>
+  <script src="js/chat.js"></script>
+  <script src="js/main.js"></script>
 </body>
 </html>
