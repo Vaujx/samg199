@@ -3,12 +3,10 @@
  * This file handles all admin panel related functionality
  */
 
-// Mock declarations for missing variables (replace with actual imports/definitions)
-const showNotification = (message, type) => { console.warn(`Notification: ${message} (${type})`); };
-const CONFIG = { ADMIN_PASSWORD: "password123" }; // Replace with actual config
-const getBinData = async (binId) => { console.warn(`Fetching data from bin: ${binId}`); return {}; }; // Replace with actual API call
-const updateBinData = async (binId, data) => { console.warn(`Updating bin: ${binId} with data:`, data); }; // Replace with actual API call
-const processQueuedOrders = async () => { console.warn("Processing queued orders"); return { total: 0, success: 0, failed: 0 }; }; // Replace with actual processing logic
+// Declare CONFIG variable
+const CONFIG = {
+    ADMIN_PASSWORD: "password123" // Replace with a more secure password
+};
 
 // Initialize admin panel
 document.addEventListener("DOMContentLoaded", () => {
@@ -34,11 +32,15 @@ document.addEventListener("DOMContentLoaded", () => {
             })
             .catch((error) => {
                 console.error("Error initializing JSONBins for admin panel:", error);
-                showNotification("There was an error initializing the admin panel. Please try again later.", "error");
+                if (typeof window.showNotification === 'function') {
+                    window.showNotification("There was an error initializing the admin panel. Please try again later.", "error");
+                }
             });
     } else {
         console.error("Required functions not loaded. Make sure jsonbin-api.js is loaded before admin.js");
-        showNotification("There was an error loading the admin panel. Please refresh the page.", "error");
+        if (typeof window.showNotification === 'function') {
+            window.showNotification("There was an error loading the admin panel. Please refresh the page.", "error");
+        }
     }
 });
 
@@ -84,10 +86,14 @@ function setupAdminEventListeners() {
                 await loadSystemStatus();
                 await loadQueuedOrders();
                 await loadSystemStatusHistory();
-                showNotification("System brought online successfully", "success");
+                if (typeof window.showNotification === 'function') {
+                    window.showNotification("System brought online successfully", "success");
+                }
             } catch (error) {
                 console.error("Error bringing system online:", error);
-                showNotification("Error bringing system online. Please try again.", "error");
+                if (typeof window.showNotification === 'function') {
+                    window.showNotification("Error bringing system online. Please try again.", "error");
+                }
             }
         });
         console.log("Online button event listener added");
@@ -102,10 +108,14 @@ function setupAdminEventListeners() {
                 await loadSystemStatus();
                 await loadQueuedOrders();
                 await loadSystemStatusHistory();
-                showNotification("System taken offline successfully", "success");
+                if (typeof window.showNotification === 'function') {
+                    window.showNotification("System taken offline successfully", "success");
+                }
             } catch (error) {
                 console.error("Error taking system offline:", error);
-                showNotification("Error taking system offline. Please try again.", "error");
+                if (typeof window.showNotification === 'function') {
+                    window.showNotification("Error taking system offline. Please try again.", "error");
+                }
             }
         });
         console.log("Offline button event listener added");
@@ -134,10 +144,14 @@ function handleAdminLogin() {
         console.log("Admin login successful");
         localStorage.setItem("seoul_grill_admin_logged_in", "true");
         showAdminDashboard();
-        showNotification("Login successful", "success");
+        if (typeof window.showNotification === 'function') {
+            window.showNotification("Login successful", "success");
+        }
     } else {
         console.log("Admin login failed - incorrect password");
-        showNotification("Invalid password. Please try again.", "error");
+        if (typeof window.showNotification === 'function') {
+            window.showNotification("Invalid password. Please try again.", "error");
+        }
     }
 }
 
@@ -147,7 +161,9 @@ function handleAdminLogout(e) {
     console.log("Handling admin logout...");
     localStorage.removeItem("seoul_grill_admin_logged_in");
     hideAdminDashboard();
-    showNotification("Logged out successfully", "info");
+    if (typeof window.showNotification === 'function') {
+        window.showNotification("Logged out successfully", "info");
+    }
     console.log("Admin logged out successfully");
 }
 
@@ -169,7 +185,9 @@ async function showAdminDashboard() {
         await loadSystemStatusHistory();
     } catch (error) {
         console.error("Error loading dashboard data:", error);
-        showNotification("Error loading dashboard data. Some information may be missing.", "warning");
+        if (typeof window.showNotification === 'function') {
+            window.showNotification("Error loading dashboard data. Some information may be missing.", "warning");
+        }
     }
 }
 
@@ -184,7 +202,7 @@ function hideAdminDashboard() {
 async function loadSystemStatus() {
     try {
         console.log("Loading system status...");
-        const systemStatus = await getBinData("SYSTEM_STATUS");
+        const systemStatus = await window.getBinData("SYSTEM_STATUS");
         const systemOnline = systemStatus.status === 1;
 
         // Update system status indicator
@@ -218,7 +236,7 @@ async function loadSystemStatus() {
 async function loadQueuedOrders() {
     try {
         console.log("Loading queued orders...");
-        const orders = await getBinData("ORDERS");
+        const orders = await window.getBinData("ORDERS");
         const queuedOrders = orders.filter((order) => order.status === "queued");
 
         // Update queue count
@@ -299,7 +317,7 @@ function toggleOrderDetails(orderId) {
 async function loadSystemStatusHistory() {
     try {
         console.log("Loading system status history...");
-        const systemLog = await getBinData("SYSTEM_LOG");
+        const systemLog = await window.getBinData("SYSTEM_LOG");
         const statusHistory = systemLog
             .filter((entry) => entry.action === "system_status_updated")
             .slice(-5); // Get last 5 entries
@@ -348,7 +366,7 @@ async function setSystemStatus(isOnline, performedBy = "system") {
         console.log(`Setting system status to ${isOnline ? "online" : "offline"}...`);
         
         // Get current system status
-        const systemStatus = await getBinData("SYSTEM_STATUS");
+        const systemStatus = await window.getBinData("SYSTEM_STATUS");
         
         // Update status
         systemStatus.status = isOnline ? 1 : 0;
@@ -356,26 +374,26 @@ async function setSystemStatus(isOnline, performedBy = "system") {
         systemStatus.updated_at = new Date().toISOString();
         
         // Update system status in JSONBin
-        await updateBinData("SYSTEM_STATUS", systemStatus);
+        await window.updateBinData("SYSTEM_STATUS", systemStatus);
         
         // Log status change
-        const systemLog = await getBinData("SYSTEM_LOG");
+        const systemLog = await window.getBinData("SYSTEM_LOG");
         systemLog.push({
             action: "system_status_updated",
             description: `System status changed to ${isOnline ? "online" : "offline"}`,
             performed_by: performedBy,
             performed_at: new Date().toISOString()
         });
-        await updateBinData("SYSTEM_LOG", systemLog);
+        await window.updateBinData("SYSTEM_LOG", systemLog);
         
         // Process queued orders if bringing system online
         if (isOnline) {
-            const queuedOrders = await getBinData("ORDERS");
+            const queuedOrders = await window.getBinData("ORDERS");
             const queuedCount = queuedOrders.filter(order => order.status === "queued").length;
             
             if (queuedCount > 0) {
                 console.log(`Processing ${queuedCount} queued orders...`);
-                const results = await processQueuedOrders();
+                const results = await window.processQueuedOrders();
                 displayProcessingResults(results);
             }
         }
@@ -424,10 +442,12 @@ function formatDate(dateString) {
 async function exportOrders() {
     try {
         console.log("Exporting orders...");
-        const orders = await getBinData("ORDERS");
+        const orders = await window.getBinData("ORDERS");
 
         if (orders.length === 0) {
-            showNotification("No orders to export", "info");
+            if (typeof window.showNotification === 'function') {
+                window.showNotification("No orders to export", "info");
+            }
             return;
         }
 
@@ -486,11 +506,15 @@ async function exportOrders() {
             downloadBackup.style.display = "inline-flex";
         }
 
-        showNotification("Orders exported successfully", "success");
+        if (typeof window.showNotification === 'function') {
+            window.showNotification("Orders exported successfully", "success");
+        }
         console.log("Orders exported successfully");
     } catch (error) {
         console.error("Error exporting orders:", error);
-        showNotification("Error exporting orders. Please try again.", "error");
+        if (typeof window.showNotification === 'function') {
+            window.showNotification("Error exporting orders. Please try again.", "error");
+        }
     }
 }
 
@@ -498,7 +522,9 @@ async function exportOrders() {
 async function importOrders() {
     const fileInput = document.getElementById("import-file");
     if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
-        showNotification("Please select a file to import", "warning");
+        if (typeof window.showNotification === 'function') {
+            window.showNotification("Please select a file to import", "warning");
+        }
         return;
     }
 
@@ -516,7 +542,7 @@ async function importOrders() {
             let orderItems = {};
 
             // Get current orders
-            const existingOrders = await getBinData("ORDERS");
+            const existingOrders = await window.getBinData("ORDERS");
             const existingOrderIds = new Set(existingOrders.map((order) => order.order_id));
 
             for (const line of lines) {
@@ -588,7 +614,7 @@ async function importOrders() {
             }
 
             // Update orders in JSONBin
-            await updateBinData("ORDERS", existingOrders);
+            await window.updateBinData("ORDERS", existingOrders);
 
             // Show import results
             const importResults = document.getElementById("import-results");
@@ -602,7 +628,9 @@ async function importOrders() {
             // Reload queued orders
             await loadQueuedOrders();
 
-            showNotification(`Successfully imported ${importedCount} orders`, "success");
+            if (typeof window.showNotification === 'function') {
+                window.showNotification(`Successfully imported ${importedCount} orders`, "success");
+            }
             console.log("Orders imported successfully:", importedCount, "orders");
         } catch (error) {
             console.error("Error importing orders:", error);
@@ -616,7 +644,9 @@ async function importOrders() {
                 importMessage.innerHTML = `<i class="fas fa-times-circle"></i> <strong>Error:</strong> ${error.message}`;
             }
 
-            showNotification(`Error importing orders: ${error.message}`, "error");
+            if (typeof window.showNotification === 'function') {
+                window.showNotification(`Error importing orders: ${error.message}`, "error");
+            }
         }
     };
 
