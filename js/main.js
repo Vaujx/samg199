@@ -8,14 +8,61 @@ document.addEventListener("DOMContentLoaded", async () => {
     try {
         console.log("Initializing application...");
 
+        // Check if functions are available
+        if (typeof window.initializeJSONBins !== 'function') {
+            throw new Error("Required functions not loaded. Make sure jsonbin-api.js is loaded before main.js");
+        }
+
         // Initialize JSONBins
-        await initializeJSONBins();
+        await window.initializeJSONBins();
+
+        // Define utility functions if they're not already defined
+        window.showNotification = window.showNotification || function(message, type) {
+            console.log(`Notification: ${message} (Type: ${type})`);
+            const notification = document.getElementById("notification");
+            const notificationMessage = document.getElementById("notification-message");
+
+            if (!notification || !notificationMessage) return;
+
+            // Set message
+            notificationMessage.textContent = message;
+
+            // Set icon based on type
+            const icon = notification.querySelector("i");
+            if (icon) {
+                if (type === "success") {
+                    icon.className = "fas fa-check-circle";
+                    icon.style.color = "#4CAF50";
+                } else if (type === "error") {
+                    icon.className = "fas fa-times-circle";
+                    icon.style.color = "#F44336";
+                } else if (type === "warning") {
+                    icon.className = "fas fa-exclamation-triangle";
+                    icon.style.color = "#FF9800";
+                } else if (type === "info") {
+                    icon.className = "fas fa-info-circle";
+                    icon.style.color = "#2196F3";
+                }
+            }
+
+            // Show notification
+            notification.style.display = "block";
+
+            // Auto-hide after 4 seconds
+            setTimeout(() => {
+                notification.style.display = "none";
+            }, 4000);
+        };
 
         // Load and display products
-        await displayProducts();
+        if (typeof displayProducts === 'function') {
+            await displayProducts();
+        }
 
         // Display cart
-        await displayCart();
+        if (typeof displayCart === 'function') {
+            await displayCart();
+        }
 
         // Check system status
         await checkSystemStatus();
@@ -32,6 +79,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         console.log("Application initialized successfully.");
     } catch (error) {
         console.error("Error initializing application:", error);
+        if (typeof window.showNotification === 'function') {
+            window.showNotification("There was an error initializing the application. Please refresh the page.", "error");
+        }
         console.log("Application will continue with limited functionality.");
     }
 });
@@ -41,56 +91,93 @@ function setupEventListeners() {
     // Checkout button
     const checkoutButton = document.getElementById("checkout-button");
     if (checkoutButton) {
-        checkoutButton.addEventListener("click", openCheckoutModal);
+        checkoutButton.addEventListener("click", function() {
+            if (typeof openCheckoutModal === 'function') {
+                openCheckoutModal();
+            }
+        });
     }
 
     // Update cart button
     const updateCartButton = document.getElementById("update-cart-button");
     if (updateCartButton) {
-        updateCartButton.addEventListener("click", updateCart);
+        updateCartButton.addEventListener("click", function() {
+            if (typeof updateCart === 'function') {
+                updateCart();
+            }
+        });
     }
 
     // Checkout modal close button
     const checkoutModalClose = document.querySelector(".checkout-modal-close");
     if (checkoutModalClose) {
-        checkoutModalClose.addEventListener("click", closeCheckoutModal);
+        checkoutModalClose.addEventListener("click", function() {
+            if (typeof closeCheckoutModal === 'function') {
+                closeCheckoutModal();
+            }
+        });
     }
 
     // Checkout modal cancel button
     const checkoutModalCancel = document.querySelector(".checkout-modal-cancel");
     if (checkoutModalCancel) {
-        checkoutModalCancel.addEventListener("click", closeCheckoutModal);
+        checkoutModalCancel.addEventListener("click", function() {
+            if (typeof closeCheckoutModal === 'function') {
+                closeCheckoutModal();
+            }
+        });
     }
 
     // Checkout modal pay button
     const checkoutModalPay = document.querySelector(".checkout-modal-pay");
     if (checkoutModalPay) {
-        checkoutModalPay.addEventListener("click", processPayment);
+        checkoutModalPay.addEventListener("click", function() {
+            if (typeof processPayment === 'function') {
+                processPayment();
+            }
+        });
     }
 
     // Success modal continue button
     const successButton = document.querySelector(".success-button");
     if (successButton) {
-        successButton.addEventListener("click", closeSuccessModal);
+        successButton.addEventListener("click", function() {
+            if (typeof closeSuccessModal === 'function') {
+                closeSuccessModal();
+            }
+        });
     }
 
     // Chat toggle button
     const chatToggle = document.querySelector(".chat-toggle");
     if (chatToggle) {
-        chatToggle.addEventListener("click", toggleChat);
+        chatToggle.addEventListener("click", function() {
+            if (typeof toggleChat === 'function') {
+                toggleChat();
+            }
+        });
     }
 
     // Close chat button
     const closeChat = document.querySelector(".close-chat");
     if (closeChat) {
-        closeChat.addEventListener("click", toggleChat);
+        closeChat.addEventListener("click", function() {
+            if (typeof toggleChat === 'function') {
+                toggleChat();
+            }
+        });
     }
 }
 
 // Check system status and update UI accordingly
 async function checkSystemStatus() {
     try {
-        const systemStatus = await getSystemStatus();
+        if (typeof window.getSystemStatus !== 'function') {
+            console.warn("getSystemStatus function not available");
+            return;
+        }
+        
+        const systemStatus = await window.getSystemStatus();
 
         // Update system status indicator
         const statusIndicator = document.getElementById("system-status-indicator");
@@ -141,3 +228,8 @@ function openModal(imageSrc) {
         }
     };
 }
+
+// Make functions available globally
+window.checkSystemStatus = checkSystemStatus;
+window.openModal = openModal;
+window.setupEventListeners = setupEventListeners;
