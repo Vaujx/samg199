@@ -4,7 +4,6 @@
  */
 
 // Use window.showNotification if available, otherwise create a fallback
-// Using var instead of let to avoid redeclaration issues
 var showNotification = window.showNotification || function(message, type) {
    console.log(`Notification: ${message} (Type: ${type})`);
 };
@@ -16,7 +15,7 @@ async function initializeJSONBins() {
         
         // Check if all bin IDs are set in CONFIG
         if (CONFIG.BINS.PRODUCTS && CONFIG.BINS.ORDERS && CONFIG.BINS.SYSTEM_STATUS && 
-            CONFIG.BINS.SYSTEM_LOG && CONFIG.BINS.SYSTEM_STATUS_HISTORY) {
+            CONFIG.BINS.SYSTEM_LOG && CONFIG.BINS.SYSTEM_STATUS_HISTORY && CONFIG.BINS.ORDER_TRACKING) {
             console.log('Using fixed bin IDs:', CONFIG.BINS);
             
             // Verify bins exist by trying to access system status
@@ -53,6 +52,7 @@ async function initializeJSONBins() {
         await createBinIfNotExists('SYSTEM_STATUS', DEFAULT_SYSTEM_STATUS);
         await createBinIfNotExists('SYSTEM_LOG', DEFAULT_SYSTEM_LOG);
         await createBinIfNotExists('SYSTEM_STATUS_HISTORY', [DEFAULT_SYSTEM_STATUS]);
+        await createBinIfNotExists('ORDER_TRACKING', DEFAULT_ORDER_TRACKING);
         
         // Save bin IDs to localStorage
         localStorage.setItem('seoul_grill_bins', JSON.stringify(CONFIG.BINS));
@@ -152,6 +152,8 @@ async function getBinData(binType) {
             return DEFAULT_ORDERS;
         } else if (binType === 'SYSTEM_STATUS_HISTORY') {
             return [DEFAULT_SYSTEM_STATUS];
+        } else if (binType === 'ORDER_TRACKING') {
+            return DEFAULT_ORDER_TRACKING;
         }
         
         return null;
@@ -324,6 +326,47 @@ async function initializeSystemStatusHistory() {
     }
 }
 
+// Add order to tracking
+async function addOrderToTracking(order) {
+    try {
+        console.log('Adding order to tracking...');
+        
+        // Get current tracking data
+        const trackingData = await getBinData('ORDER_TRACKING');
+        
+        // Add new order to tracking
+        trackingData.push(order);
+        
+        // Update tracking data in bin
+        await updateBinData('ORDER_TRACKING', trackingData);
+        
+        console.log('Order added to tracking successfully');
+        return true;
+    } catch (error) {
+        console.error('Error adding order to tracking:', error);
+        return false;
+    }
+}
+
+// Get order tracking by email
+async function getOrderTrackingByEmail(email) {
+    try {
+        console.log(`Getting order tracking for email: ${email}`);
+        
+        // Get all tracking data
+        const trackingData = await getBinData('ORDER_TRACKING');
+        
+        // Filter by email
+        const customerOrders = trackingData.filter(order => order.customer_email === email);
+        
+        console.log(`Found ${customerOrders.length} orders for email: ${email}`);
+        return customerOrders;
+    } catch (error) {
+        console.error(`Error getting order tracking for email ${email}:`, error);
+        return [];
+    }
+}
+
 // Process queued orders
 async function processQueuedOrders() {
     try {
@@ -396,6 +439,9 @@ async function queueOrder(order) {
         // Update orders in bin
         await updateBinData('ORDERS', orders);
         
+        // Add order to tracking
+        await addOrderToTracking(order);
+        
         // Log order queued
         const systemLog = await getBinData('SYSTEM_LOG');
         systemLog.push({
@@ -453,6 +499,18 @@ async function updateOrderStatus(orderId, newStatus, updatedBy = 'system') {
         
         await updateBinData('ORDERS', orders);
         
+        // Update tracking data as well
+        const trackingData = await getBinData('ORDER_TRACKING');
+        const trackingIndex = trackingData.findIndex(order => order.order_id === orderId);
+        
+        if (trackingIndex !== -1) {
+            trackingData[trackingIndex].status = newStatus;
+            if (newStatus === 'processed' && oldStatus !== 'processed') {
+                trackingData[trackingIndex].processed_at = new Date().toISOString();
+            }
+            await updateBinData('ORDER_TRACKING', trackingData);
+        }
+        
         // Log status change
         const systemLog = await getBinData('SYSTEM_LOG');
         systemLog.push({
@@ -485,6 +543,15 @@ async function deleteOrder(orderId, deletedBy = 'system') {
         
         await updateBinData('ORDERS', orders);
         
+        // Remove from tracking data as well
+        const trackingData = await getBinData('ORDER_TRACKING');
+        const trackingIndex = trackingData.findIndex(order => order.order_id === orderId);
+        
+        if (trackingIndex !== -1) {
+            trackingData.splice(trackingIndex, 1);
+            await updateBinData('ORDER_TRACKING', trackingData);
+        }
+        
         // Log deletion
         const systemLog = await getBinData('SYSTEM_LOG');
         systemLog.push({
@@ -510,6 +577,7 @@ async function backupAllData() {
         const systemStatus = await getBinData('SYSTEM_STATUS');
         const systemLog = await getBinData('SYSTEM_LOG');
         const systemStatusHistory = await getBinData('SYSTEM_STATUS_HISTORY');
+        const orderTracking = await getBinData('ORDER_TRACKING');
         
         const backup = {
             products,
@@ -517,6 +585,7 @@ async function backupAllData() {
             systemStatus,
             systemLog,
             systemStatusHistory,
+            orderTracking,
             timestamp: new Date().toISOString(),
             version: CONFIG.VERSION
         };
@@ -544,6 +613,11 @@ async function restoreFromBackup(backup, restoredBy = 'system') {
         // Restore system status history if available
         if (backup.systemStatusHistory) {
             await updateBinData('SYSTEM_STATUS_HISTORY', backup.systemStatusHistory);
+        }
+        
+        // Restore order tracking if available
+        if (backup.orderTracking) {
+            await updateBinData('ORDER_TRACKING', backup.orderTracking);
         }
         
         // Add restoration log entry
@@ -602,3 +676,5 @@ window.updateOrderStatus = updateOrderStatus;
 window.deleteOrder = deleteOrder;
 window.backupAllData = backupAllData;
 window.restoreFromBackup = restoreFromBackup;
+window.addOrderToTracking = addOrderToTracking;
+window.getOrderTrackingByEmail = getOrderTrackingByEmail;
