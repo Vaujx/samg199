@@ -19,17 +19,23 @@ async function initializeJSONBins() {
                 return true;
             } catch (error) {
                 console.error('Error accessing bins with fixed IDs:', error);
-                showNotification('Error accessing database. Please check your bin IDs.', 'error');
+                if (typeof showNotification === 'function') {
+                    showNotification('Error accessing database. Please check your bin IDs.', 'error');
+                }
                 return false;
             }
         } else {
             console.error('Missing bin IDs in configuration');
-            showNotification('Missing bin IDs in configuration. Please set all bin IDs.', 'error');
+            if (typeof showNotification === 'function') {
+                showNotification('Missing bin IDs in configuration. Please set all bin IDs.', 'error');
+            }
             return false;
         }
     } catch (error) {
         console.error('Error initializing JSONBins:', error);
-        showNotification('Error initializing database. Some features may not work properly.', 'error');
+        if (typeof showNotification === 'function') {
+            showNotification('Error initializing database. Some features may not work properly.', 'error');
+        }
         return false;
     }
 }
@@ -155,19 +161,25 @@ async function setSystemStatus(isOnline, updatedBy = 'system') {
             const results = await processQueuedOrders();
             console.log('Processed queued orders:', results);
             
-            if (results.total > 0) {
-                showNotification(`System is now online. Processed ${results.success} of ${results.total} queued orders.`, 'success');
-            } else {
-                showNotification('System is now online. No queued orders to process.', 'success');
+            if (typeof showNotification === 'function') {
+                if (results.total > 0) {
+                    showNotification(`System is now online. Processed ${results.success} of ${results.total} queued orders.`, 'success');
+                } else {
+                    showNotification('System is now online. No queued orders to process.', 'success');
+                }
             }
         } else if (wasOnline && !goingOnline) {
-            showNotification('System is now offline. New orders will be queued.', 'warning');
+            if (typeof showNotification === 'function') {
+                showNotification('System is now offline. New orders will be queued.', 'warning');
+            }
         }
         
         return true;
     } catch (error) {
         console.error('Error setting system status:', error);
-        showNotification(`Error ${isOnline ? 'bringing system online' : 'taking system offline'}. Please try again.`, 'error');
+        if (typeof showNotification === 'function') {
+            showNotification(`Error ${isOnline ? 'bringing system online' : 'taking system offline'}. Please try again.`, 'error');
+        }
         return false;
     }
 }
