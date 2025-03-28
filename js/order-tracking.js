@@ -89,9 +89,13 @@ async function trackOrders() {
         
         // Try to get orders from the ORDER_TRACKING bin
         try {
+            console.log('Fetching orders from ORDER_TRACKING bin for email:', email);
             const trackingData = await getBinData('ORDER_TRACKING');
+            console.log('ORDER_TRACKING data:', trackingData);
+            
             if (Array.isArray(trackingData)) {
                 orders = trackingData.filter(order => order.customer_email === email);
+                console.log('Filtered orders by email:', orders);
             } else {
                 console.warn('ORDER_TRACKING bin data is not an array:', trackingData);
             }
@@ -99,9 +103,11 @@ async function trackOrders() {
             console.error('Error getting order tracking data:', error);
             // Fallback to getting orders from the ORDERS bin
             try {
+                console.log('Falling back to ORDERS bin for email:', email);
                 const allOrders = await getBinData('ORDERS');
                 if (Array.isArray(allOrders)) {
                     orders = allOrders.filter(order => order.customer_email === email);
+                    console.log('Filtered orders from ORDERS bin:', orders);
                 }
             } catch (fallbackError) {
                 console.error('Error getting fallback order data:', fallbackError);
