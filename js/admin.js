@@ -88,11 +88,20 @@ function setupLoginEventListeners() {
         // Remove any existing event listeners
         loginButton.removeEventListener("click", handleAdminLogin);
         // Add new event listener
-        loginButton.addEventListener("click", handleAdminLogin);
-        console.log("Login button event listener added");
+        loginButton.addEventListener('click', function() {
+    const enteredPassword = adminPasswordInput.value.trim().toLowerCase(); // Trim and lowercase
+    const correctPassword = ADMIN_PASSWORD.toLowerCase();
+
+    if (enteredPassword === correctPassword) {
+        adminLoginSection.style.display = 'none';
+        adminDashboardSection.style.display = 'block';
+        loadQueue();
+        loadHistory();
+        updateSystemStatus();
     } else {
-        console.error("Login button not found in the DOM");
+        alert('Incorrect password. Please try again.');
     }
+});
 
     // Enter key in password field
     const passwordInput = document.getElementById("admin_password");
