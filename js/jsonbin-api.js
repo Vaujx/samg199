@@ -17,6 +17,11 @@ async function initializeJSONBins() {
         if (CONFIG && CONFIG.BINS) {
             CONFIG.BINS.ORDER_TRACKING = "67e60dcc8561e97a50f45273";
             console.log('Set ORDER_TRACKING bin ID:', CONFIG.BINS.ORDER_TRACKING);
+        } else {
+            // Initialize CONFIG.BINS if it doesn't exist
+            if (!CONFIG) CONFIG = {};
+            if (!CONFIG.BINS) CONFIG.BINS = {};
+            CONFIG.BINS.ORDER_TRACKING = "67e60dcc8561e97a50f45273";
         }
         
         // Check if all bin IDs are set in CONFIG
@@ -35,7 +40,7 @@ async function initializeJSONBins() {
                 return true;
             } catch (error) {
                 console.error('Error accessing bins with fixed IDs:', error);
-                return false;
+                // Continue to create new bins
             }
         }
         
@@ -65,22 +70,38 @@ async function initializeJSONBins() {
         await createBinIfNotExists('ORDERS', DEFAULT_ORDERS);
         await createBinIfNotExists('SYSTEM_STATUS', DEFAULT_SYSTEM_STATUS);
         await createBinIfNotExists('SYSTEM_LOG', DEFAULT_SYSTEM_LOG);
-        await createBinIfNotExists('ORDER_TRACKING', []); // Initialize as empty array
+        
+        // Special handling for ORDER_TRACKING bin
+        if (!CONFIG.BINS.ORDER_TRACKING) {
+            try {
+                await createBinIfNotExists('ORDER_TRACKING', []);
+            } catch (error) {
+                console.error('Error creating ORDER_TRACKING bin:', error);
+                // If we can't create a new bin, use the fixed ID
+                CONFIG.BINS.ORDER_TRACKING = "67e60dcc8561e97a50f45273";
+                // Try to fix the existing bin
+                await fixOrderTrackingBin();
+            }
+        }
         
         // Save bin IDs to localStorage
         localStorage.setItem('seoul_grill_bins', JSON.stringify(CONFIG.BINS));
         console.log('Created and saved bin IDs:', CONFIG.BINS);
         
         // Log initialization in system log
-        const systemLog = await getBinData('SYSTEM_LOG');
-        systemLog.push({
-            action: 'system_initialized',
-            description: 'System initialized with default data',
-            performed_by: 'system',
-            performed_at: new Date().toISOString(),
-            version: CONFIG.VERSION
-        });
-        await updateBinData('SYSTEM_LOG', systemLog);
+        try {
+            const systemLog = await getBinData('SYSTEM_LOG');
+            systemLog.push({
+                action: 'system_initialized',
+                description: 'System initialized with default data',
+                performed_by: 'system',
+                performed_at: new Date().toISOString(),
+                version: CONFIG.VERSION || '1.0'
+            });
+            await updateBinData('SYSTEM_LOG', systemLog);
+        } catch (error) {
+            console.error('Error logging system initialization:', error);
+        }
         
         return true;
     } catch (error) {
@@ -100,22 +121,69 @@ async function fixOrderTrackingBin() {
     try {
         console.log('Checking ORDER_TRACKING bin structure...');
         
-        // Direct approach to fix the bin
-        const response = await fetch(`${CONFIG.JSONBIN_URL}/${CONFIG.BINS.ORDER_TRACKING}`, {
+        // First try to get the current data
+        try {
+            const response = await fetch(`${CONFIG.JSONBIN_URL}/${CONFIG.BINS.ORDER_TRACKING}/latest`, {
+                method: 'GET',
+                headers: {
+                    'X-Master-Key': CONFIG.MASTER_KEY
+                }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                let currentData = data.record;
+                
+                // Check if the data is nested incorrectly
+                if (Array.isArray(currentData) && currentData.length > 0 && Array.isArray(currentData[0]) && currentData.length === 1) {
+                    console.log('ORDER_TRACKING bin has nested array structure, fixing...');
+                    // If it's a nested array like [[]], flatten it or initialize as empty array
+                    currentData = [];
+                } else if (!Array.isArray(currentData)) {
+                    console.log('ORDER_TRACKING bin is not an array, initializing as empty array');
+                    currentData = [];
+                }
+                
+                // Update the bin with the fixed structure
+                const updateResponse = await fetch(`${CONFIG.JSONBIN_URL}/${CONFIG.BINS.ORDER_TRACKING}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Master-Key': CONFIG.MASTER_KEY
+                    },
+                    body: JSON.stringify(currentData)
+                });
+                
+                if (updateResponse.ok) {
+                    console.log('ORDER_TRACKING bin fixed successfully');
+                    return true;
+                } else {
+                    console.error('Failed to update ORDER_TRACKING bin:', updateResponse.status);
+                }
+            } else {
+                console.error('Failed to get ORDER_TRACKING data:', response.status);
+            }
+        } catch (error) {
+            console.error('Error accessing ORDER_TRACKING bin:', error);
+        }
+        
+        // If the above fails, try a direct update with an empty array
+        console.log('Attempting direct update of ORDER_TRACKING bin...');
+        const directResponse = await fetch(`${CONFIG.JSONBIN_URL}/${CONFIG.BINS.ORDER_TRACKING}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
                 'X-Master-Key': CONFIG.MASTER_KEY
             },
-            body: JSON.stringify([]) // Initialize as empty array
+            body: JSON.stringify([])
         });
         
-        if (!response.ok) {
-            throw new Error(`Failed to fix ORDER_TRACKING bin: ${response.status}`);
+        if (directResponse.ok) {
+            console.log('ORDER_TRACKING bin fixed successfully with direct update');
+            return true;
+        } else {
+            throw new Error(`Failed to fix ORDER_TRACKING bin: ${directResponse.status}`);
         }
-        
-        console.log('ORDER_TRACKING bin fixed successfully');
-        return true;
     } catch (error) {
         console.error('Error fixing ORDER_TRACKING bin:', error);
         return false;
@@ -245,13 +313,27 @@ async function queueOrder(order) {
         console.log('Queueing order:', order);
         
         // Get current orders
-        const orders = await getBinData('ORDERS');
+        let orders;
+        try {
+            orders = await getBinData('ORDERS');
+            if (!Array.isArray(orders)) {
+                orders = DEFAULT_ORDERS;
+            }
+        } catch (error) {
+            console.warn('Error getting orders, using default:', error);
+            orders = DEFAULT_ORDERS;
+        }
         
         // Add order to queue
         orders.push(order);
         
         // Update orders in bin
-        await updateBinData('ORDERS', orders);
+        try {
+            await updateBinData('ORDERS', orders);
+        } catch (error) {
+            console.error('Error updating orders bin:', error);
+            // Continue to try adding to tracking
+        }
         
         // Add to order tracking - this is critical for the tracking feature
         const trackingSuccess = await addOrderToTracking(order);
@@ -260,14 +342,18 @@ async function queueOrder(order) {
         }
         
         // Log order queued
-        const systemLog = await getBinData('SYSTEM_LOG');
-        systemLog.push({
-            action: 'order_queued',
-            description: `Order #${order.order_id} queued`,
-            performed_by: order.customer_email || 'Guest',
-            performed_at: new Date().toISOString()
-        });
-        await updateBinData('SYSTEM_LOG', systemLog);
+        try {
+            const systemLog = await getBinData('SYSTEM_LOG');
+            systemLog.push({
+                action: 'order_queued',
+                description: `Order #${order.order_id} queued`,
+                performed_by: order.customer_email || 'Guest',
+                performed_at: new Date().toISOString()
+            });
+            await updateBinData('SYSTEM_LOG', systemLog);
+        } catch (error) {
+            console.error('Error logging order:', error);
+        }
         
         console.log('Order queued successfully');
         return true;
@@ -289,24 +375,30 @@ async function addOrderToTracking(order) {
         }
         
         // Get current tracking data - use direct fetch to ensure we get the latest data
-        const response = await fetch(`${CONFIG.JSONBIN_URL}/${CONFIG.BINS.ORDER_TRACKING}/latest`, {
-            method: 'GET',
-            headers: {
-                'X-Master-Key': CONFIG.MASTER_KEY
+        let trackingData = [];
+        
+        try {
+            const response = await fetch(`${CONFIG.JSONBIN_URL}/${CONFIG.BINS.ORDER_TRACKING}/latest`, {
+                method: 'GET',
+                headers: {
+                    'X-Master-Key': CONFIG.MASTER_KEY
+                }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                trackingData = data.record;
+                
+                // Ensure trackingData is an array
+                if (!Array.isArray(trackingData)) {
+                    console.warn('ORDER_TRACKING data is not an array, initializing as empty array');
+                    trackingData = [];
+                }
+            } else {
+                console.warn('Failed to get ORDER_TRACKING data, initializing as empty array');
             }
-        });
-        
-        if (!response.ok) {
-            throw new Error(`Failed to get ORDER_TRACKING data: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        let trackingData = data.record;
-        
-        // Ensure trackingData is an array
-        if (!Array.isArray(trackingData)) {
-            console.warn('ORDER_TRACKING data is not an array, initializing as empty array');
-            trackingData = [];
+        } catch (error) {
+            console.warn('Error getting ORDER_TRACKING data, initializing as empty array:', error);
         }
         
         // Add new order to tracking
@@ -340,23 +432,31 @@ async function getOrderTrackingByEmail(email) {
         console.log(`Getting order tracking for email: ${email}`);
         
         // Get all tracking data
-        const response = await fetch(`${CONFIG.JSONBIN_URL}/${CONFIG.BINS.ORDER_TRACKING}/latest`, {
-            method: 'GET',
-            headers: {
-                'X-Master-Key': CONFIG.MASTER_KEY
+        let trackingData = [];
+        
+        try {
+            const response = await fetch(`${CONFIG.JSONBIN_URL}/${CONFIG.BINS.ORDER_TRACKING}/latest`, {
+                method: 'GET',
+                headers: {
+                    'X-Master-Key': CONFIG.MASTER_KEY
+                }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                trackingData = data.record;
+                
+                // Ensure trackingData is an array
+                if (!Array.isArray(trackingData)) {
+                    console.warn('ORDER_TRACKING data is not an array, returning empty array');
+                    return [];
+                }
+            } else {
+                console.warn('Failed to get ORDER_TRACKING data, returning empty array');
+                return [];
             }
-        });
-        
-        if (!response.ok) {
-            throw new Error(`Failed to get ORDER_TRACKING data: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        let trackingData = data.record;
-        
-        // Ensure trackingData is an array
-        if (!Array.isArray(trackingData)) {
-            console.warn('ORDER_TRACKING data is not an array, returning empty array');
+        } catch (error) {
+            console.warn('Error getting ORDER_TRACKING data, returning empty array:', error);
             return [];
         }
         
@@ -375,63 +475,90 @@ async function getOrderTrackingByEmail(email) {
 async function updateOrderStatus(orderId, newStatus, updatedBy = 'system') {
     try {
         // Update in ORDERS bin
-        const orders = await getBinData('ORDERS');
-        const orderIndex = orders.findIndex(order => order.order_id === orderId);
-        
-        if (orderIndex !== -1) {
-            const oldStatus = orders[orderIndex].status;
-            orders[orderIndex].status = newStatus;
+        try {
+            const orders = await getBinData('ORDERS');
+            const orderIndex = orders.findIndex(order => order.order_id === orderId);
             
-            if (newStatus === 'processed' && oldStatus !== 'processed') {
-                orders[orderIndex].processed_at = new Date().toISOString();
+            if (orderIndex !== -1) {
+                const oldStatus = orders[orderIndex].status;
+                orders[orderIndex].status = newStatus;
+                
+                if (newStatus === 'processed' && oldStatus !== 'processed') {
+                    orders[orderIndex].processed_at = new Date().toISOString();
+                }
+                
+                await updateBinData('ORDERS', orders);
             }
-            
-            await updateBinData('ORDERS', orders);
+        } catch (error) {
+            console.error('Error updating order status in ORDERS bin:', error);
         }
         
         // Update in ORDER_TRACKING bin
-        const response = await fetch(`${CONFIG.JSONBIN_URL}/${CONFIG.BINS.ORDER_TRACKING}/latest`, {
-            method: 'GET',
-            headers: {
-                'X-Master-Key': CONFIG.MASTER_KEY
-            }
-        });
+        let trackingData = [];
         
-        if (!response.ok) {
-            throw new Error(`Failed to get ORDER_TRACKING data: ${response.status}`);
+        try {
+            const response = await fetch(`${CONFIG.JSONBIN_URL}/${CONFIG.BINS.ORDER_TRACKING}/latest`, {
+                method: 'GET',
+                headers: {
+                    'X-Master-Key': CONFIG.MASTER_KEY
+                }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                trackingData = data.record;
+                
+                // Ensure trackingData is an array
+                if (!Array.isArray(trackingData)) {
+                    console.warn('ORDER_TRACKING data is not an array, initializing as empty array');
+                    trackingData = [];
+                }
+            } else {
+                console.warn('Failed to get ORDER_TRACKING data');
+                return false;
+            }
+        } catch (error) {
+            console.warn('Error getting ORDER_TRACKING data:', error);
+            return false;
         }
         
-        const data = await response.json();
-        let trackingData = data.record;
+        const trackingIndex = trackingData.findIndex(order => order.order_id === orderId);
         
-        // Ensure trackingData is an array
-        if (!Array.isArray(trackingData)) {
-            console.warn('ORDER_TRACKING data is not an array, initializing as empty array');
-            trackingData = [];
-        } else {
-            const trackingIndex = trackingData.findIndex(order => order.order_id === orderId);
+        if (trackingIndex !== -1) {
+            const oldStatus = trackingData[trackingIndex].status;
+            trackingData[trackingIndex].status = newStatus;
             
-            if (trackingIndex !== -1) {
-                const oldStatus = trackingData[trackingIndex].status;
-                trackingData[trackingIndex].status = newStatus;
-                
-                if (newStatus === 'processed' && oldStatus !== 'processed') {
-                    trackingData[trackingIndex].processed_at = new Date().toISOString();
-                }
-                
-                await updateBinData('ORDER_TRACKING', trackingData);
+            if (newStatus === 'processed' && oldStatus !== 'processed') {
+                trackingData[trackingIndex].processed_at = new Date().toISOString();
+            }
+            
+            const updateResponse = await fetch(`${CONFIG.JSONBIN_URL}/${CONFIG.BINS.ORDER_TRACKING}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Master-Key': CONFIG.MASTER_KEY
+                },
+                body: JSON.stringify(trackingData)
+            });
+            
+            if (!updateResponse.ok) {
+                throw new Error(`Failed to update ORDER_TRACKING data: ${updateResponse.status}`);
             }
         }
         
         // Log status change
-        const systemLog = await getBinData('SYSTEM_LOG');
-        systemLog.push({
-            action: 'order_status_updated',
-            description: `Order #${orderId} status changed to ${newStatus}`,
-            performed_by: updatedBy,
-            performed_at: new Date().toISOString()
-        });
-        await updateBinData('SYSTEM_LOG', systemLog);
+        try {
+            const systemLog = await getBinData('SYSTEM_LOG');
+            systemLog.push({
+                action: 'order_status_updated',
+                description: `Order #${orderId} status changed to ${newStatus}`,
+                performed_by: updatedBy,
+                performed_at: new Date().toISOString()
+            });
+            await updateBinData('SYSTEM_LOG', systemLog);
+        } catch (error) {
+            console.error('Error logging status change:', error);
+        }
         
         console.log(`Order #${orderId} status updated to ${newStatus}`);
         return true;
@@ -444,7 +571,19 @@ async function updateOrderStatus(orderId, newStatus, updatedBy = 'system') {
 // Process queued orders
 async function processQueuedOrders() {
     try {
-        const orders = await getBinData('ORDERS');
+        let orders;
+        try {
+            orders = await getBinData('ORDERS');
+        } catch (error) {
+            console.error('Error getting orders:', error);
+            return {
+                success: 0,
+                failed: 0,
+                total: 0,
+                error: error.message
+            };
+        }
+        
         const queuedOrders = orders.filter(order => order.status === 'queued');
         
         if (queuedOrders.length === 0) {
