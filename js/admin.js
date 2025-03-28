@@ -8,7 +8,7 @@ if (typeof window.CONFIG === 'undefined') {
     window.CONFIG = {
         ADMIN_PASSWORD: "admin123",
         BIN_IDS: {
-            SYSTEM_STATUS: "67e5fbd8561e97a50f4996", // Your actual bin ID from the screenshot
+            SYSTEM_STATUS: "67e54b6d8a456b79667dbebe",
             ORDERS: "67e54c158561e97a50f3f456",
             SYSTEM_LOG: "67e54c2b8960c979a579877a"
         }
