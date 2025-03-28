@@ -10,10 +10,10 @@ const CONFIG = {
    X_ACCESS_KEY: "$2a$10$V5G6G/GoKByB9rHsvU2bRupT.5uqU15DTZBXguWdHdrkTYi/ljsQG", // Replace with your actual Access Key
    // Bin IDs for different data types - Replace with your actual bin IDs
    BINS: {
-       PRODUCTS: "67e54b6d8a456b79667dbebe", // Remove any spaces or %20 in the ID
-       ORDERS: "67e54b6d8a456b79667dbebf", // Remove any spaces or %20 in the ID
-       SYSTEM_STATUS: "67e54b6d8a456b79667dbec0", // Remove any spaces or %20 in the ID
-       SYSTEM_LOG: "67e54b6d8a456b79667dbec1", // Remove any spaces or %20 in the ID
+       PRODUCTS: "67e54b4b8960c979a5798697", 
+       ORDERS: "67e54c158561e97a50f3f456", 
+       SYSTEM_STATUS: "67e54b6d8a456b79667dbebe", 
+       SYSTEM_LOG: "67e54c2b8960c979a579877a", 
    },
    // Default admin password
    ADMIN_PASSWORD: "admin123",
