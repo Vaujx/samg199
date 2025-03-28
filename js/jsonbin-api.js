@@ -3,8 +3,9 @@
  * This file handles all interactions with the JSONBin.io API
  */
 
-// Declare showNotification (assuming it's a global function or imported elsewhere)
-let showNotification = window.showNotification || function(message, type) {
+// Use window.showNotification if available, otherwise create a fallback
+// Using var instead of let to avoid redeclaration issues
+var showNotification = window.showNotification || function(message, type) {
    console.log(`Notification: ${message} (Type: ${type})`);
 };
 
@@ -585,3 +586,19 @@ if (CONFIG.AUTO_INIT && isRunningOnGitHubPages()) {
         }, 1000); // Delay initialization to ensure page is fully loaded
     });
 }
+
+// Make functions available globally
+window.initializeJSONBins = initializeJSONBins;
+window.getBinData = getBinData;
+window.updateBinData = updateBinData;
+window.getSystemStatus = getSystemStatus;
+window.setSystemStatus = setSystemStatus;
+window.initializeSystemStatusHistory = initializeSystemStatusHistory;
+window.processQueuedOrders = processQueuedOrders;
+window.queueOrder = queueOrder;
+window.getAllOrders = getAllOrders;
+window.getOrderById = getOrderById;
+window.updateOrderStatus = updateOrderStatus;
+window.deleteOrder = deleteOrder;
+window.backupAllData = backupAllData;
+window.restoreFromBackup = restoreFromBackup;
