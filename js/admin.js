@@ -9,10 +9,12 @@
     const ADMIN_CONFIG = {
         ADMIN_PASSWORD: "admin123",
         BIN_IDS: {
-            SYSTEM_STATUS: "67e54b6d8a456b79667dbebe",
-            ORDERS: "67e54c158561e97a50f3f456",
+            SYSTEM_STATUS: "67e5fbd8561e97a50f4996", // Updated with your actual bin ID
+            ORDERS: "67e54c158561e97a50f3f456", 
             SYSTEM_LOG: "67e54c2b8960c979a579877a"
-        }
+        },
+        // JSONBin API key - this should be your actual API key
+        MASTER_KEY: "$2a$10$Ht/Qs9XzKYW5H1eCy.xdcuDIHleLdQxJFIjS6UMNUKEbDULGpjFAe"
     };
 
     // Custom notification function
@@ -155,15 +157,224 @@
     }
 
     // Load dashboard data
-    function loadDashboardData() {
+    async function loadDashboardData() {
         console.log("Loading dashboard data");
         
-        // For GitHub Pages, we'll use mock data since we can't use server-side code
-        updateSystemStatusDisplay(false); // Default to offline
-        updateQueueDisplay(0); // Default to 0 queued orders
+        try {
+            // Load system status
+            const systemStatus = await getSystemStatus();
+            updateSystemStatusDisplay(systemStatus.status === 1);
+            
+            // Load queued orders (mock for now)
+            updateQueueDisplay(0);
+            
+            // Load system logs (mock for now)
+            loadSystemLogs();
+        } catch (error) {
+            console.error("Error loading dashboard data:", error);
+            showAdminNotification("Error loading dashboard data. Some information may be missing.", "error");
+        }
+    }
+
+    // Get system status from JSONBin
+    async function getSystemStatus() {
+        console.log("Getting system status from JSONBin");
         
-        // If you have a way to fetch data from an external API that works with GitHub Pages,
-        // you can implement it here
+        try {
+            const response = await fetch(`https://api.jsonbin.io/v3/b/${ADMIN_CONFIG.BIN_IDS.SYSTEM_STATUS}/latest`, {
+                method: 'GET',
+                headers: {
+                    'X-Master-Key': ADMIN_CONFIG.MASTER_KEY
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error(`Failed to fetch system status: ${response.status} ${response.statusText}`);
+            }
+            
+            const data = await response.json();
+            console.log("System status loaded:", data.record);
+            return data.record;
+        } catch (error) {
+            console.error("Error getting system status:", error);
+            // Return default status if there's an error
+            return { status: 0, updated_by: "system", updated_at: new Date().toISOString() };
+        }
+    }
+
+    // Update system status in JSONBin
+    async function updateSystemStatus(isOnline) {
+        console.log(`Updating system status to ${isOnline ? "online" : "offline"} in JSONBin`);
+        
+        try {
+            // Prepare the data
+            const statusData = {
+                status: isOnline ? 1 : 0,
+                updated_by: "admin",
+                updated_at: new Date().toISOString()
+            };
+            
+            // Update the status in JSONBin
+            const response = await fetch(`https://api.jsonbin.io/v3/b/${ADMIN_CONFIG.BIN_IDS.SYSTEM_STATUS}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Master-Key': ADMIN_CONFIG.MASTER_KEY
+                },
+                body: JSON.stringify(statusData)
+            });
+            
+            if (!response.ok) {
+                throw new Error(`Failed to update system status: ${response.status} ${response.statusText}`);
+            }
+            
+            const data = await response.json();
+            console.log("System status updated:", data.record);
+            
+            // Log the status change
+            await logSystemStatusChange(isOnline);
+            
+            return data.record;
+        } catch (error) {
+            console.error("Error updating system status:", error);
+            throw error;
+        }
+    }
+
+    // Log system status change
+    async function logSystemStatusChange(isOnline) {
+        console.log(`Logging system status change to ${isOnline ? "online" : "offline"}`);
+        
+        try {
+            // Get current logs
+            let systemLogs = [];
+            
+            try {
+                const response = await fetch(`https://api.jsonbin.io/v3/b/${ADMIN_CONFIG.BIN_IDS.SYSTEM_LOG}/latest`, {
+                    method: 'GET',
+                    headers: {
+                        'X-Master-Key': ADMIN_CONFIG.MASTER_KEY
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    systemLogs = data.record || [];
+                }
+            } catch (error) {
+                console.warn("Error getting system logs, creating new log:", error);
+            }
+            
+            // Add new log entry
+            const logEntry = {
+                action: "system_status_updated",
+                description: `System status changed to ${isOnline ? "online" : "offline"}`,
+                performed_by: "admin",
+                performed_at: new Date().toISOString()
+            };
+            
+            systemLogs.push(logEntry);
+            
+            // Update logs in JSONBin
+            const updateResponse = await fetch(`https://api.jsonbin.io/v3/b/${ADMIN_CONFIG.BIN_IDS.SYSTEM_LOG}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Master-Key': ADMIN_CONFIG.MASTER_KEY
+                },
+                body: JSON.stringify(systemLogs)
+            });
+            
+            if (!updateResponse.ok) {
+                throw new Error(`Failed to update system logs: ${updateResponse.status} ${updateResponse.statusText}`);
+            }
+            
+            console.log("System log updated");
+            
+            // Update the logs display
+            loadSystemLogs();
+            
+            return true;
+        } catch (error) {
+            console.error("Error logging system status change:", error);
+            return false;
+        }
+    }
+
+    // Load system logs
+    async function loadSystemLogs() {
+        console.log("Loading system logs");
+        
+        try {
+            const response = await fetch(`https://api.jsonbin.io/v3/b/${ADMIN_CONFIG.BIN_IDS.SYSTEM_LOG}/latest`, {
+                method: 'GET',
+                headers: {
+                    'X-Master-Key': ADMIN_CONFIG.MASTER_KEY
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error(`Failed to fetch system logs: ${response.status} ${response.statusText}`);
+            }
+            
+            const data = await response.json();
+            const logs = data.record || [];
+            
+            // Update the logs display
+            updateLogsDisplay(logs);
+            
+            return logs;
+        } catch (error) {
+            console.error("Error loading system logs:", error);
+            
+            // Show empty logs
+            updateLogsDisplay([]);
+            
+            return [];
+        }
+    }
+
+    // Update logs display
+    function updateLogsDisplay(logs) {
+        const statusHistoryTable = document.getElementById("status-history");
+        if (!statusHistoryTable) return;
+        
+        statusHistoryTable.innerHTML = "";
+        
+        // Filter for status updates and get the last 5
+        const statusLogs = logs
+            .filter(log => log.action === "system_status_updated")
+            .sort((a, b) => new Date(b.performed_at) - new Date(a.performed_at))
+            .slice(0, 5);
+        
+        if (statusLogs.length === 0) {
+            const tr = document.createElement("tr");
+            tr.innerHTML = '<td colspan="3">No status changes recorded yet.</td>';
+            statusHistoryTable.appendChild(tr);
+        } else {
+            statusLogs.forEach(log => {
+                const tr = document.createElement("tr");
+                const isOnline = log.description.includes("online");
+                
+                tr.innerHTML = `
+                    <td>
+                        ${isOnline 
+                            ? '<span class="status-online"><i class="fas fa-check-circle"></i> System Brought Online</span>' 
+                            : '<span class="status-offline"><i class="fas fa-times-circle"></i> System Taken Offline</span>'}
+                    </td>
+                    <td>${log.performed_by}</td>
+                    <td>${formatDate(log.performed_at)}</td>
+                `;
+                
+                statusHistoryTable.appendChild(tr);
+            });
+        }
+    }
+
+    // Format date for display
+    function formatDate(dateString) {
+        const date = new Date(dateString);
+        return date.toLocaleString();
     }
 
     // Set up system control buttons
@@ -172,18 +383,56 @@
         const offlineButton = document.getElementById("offline-button");
         
         if (onlineButton) {
-            onlineButton.addEventListener("click", function() {
+            onlineButton.addEventListener("click", async function() {
                 console.log("Bringing system online...");
-                updateSystemStatusDisplay(true);
-                showAdminNotification("System brought online successfully", "success");
+                
+                try {
+                    // Show loading state
+                    onlineButton.disabled = true;
+                    onlineButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+                    
+                    // Update system status in JSONBin
+                    await updateSystemStatus(true);
+                    
+                    // Update UI
+                    updateSystemStatusDisplay(true);
+                    
+                    showAdminNotification("System brought online successfully", "success");
+                } catch (error) {
+                    console.error("Error bringing system online:", error);
+                    showAdminNotification("Error bringing system online. Please try again.", "error");
+                    
+                    // Reset button
+                    onlineButton.disabled = false;
+                    onlineButton.innerHTML = '<i class="fas fa-power-off"></i> Bring System Online';
+                }
             });
         }
         
         if (offlineButton) {
-            offlineButton.addEventListener("click", function() {
+            offlineButton.addEventListener("click", async function() {
                 console.log("Taking system offline...");
-                updateSystemStatusDisplay(false);
-                showAdminNotification("System taken offline successfully", "success");
+                
+                try {
+                    // Show loading state
+                    offlineButton.disabled = true;
+                    offlineButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+                    
+                    // Update system status in JSONBin
+                    await updateSystemStatus(false);
+                    
+                    // Update UI
+                    updateSystemStatusDisplay(false);
+                    
+                    showAdminNotification("System taken offline successfully", "success");
+                } catch (error) {
+                    console.error("Error taking system offline:", error);
+                    showAdminNotification("Error taking system offline. Please try again.", "error");
+                    
+                    // Reset button
+                    offlineButton.disabled = false;
+                    offlineButton.innerHTML = '<i class="fas fa-power-off"></i> Take System Offline';
+                }
             });
         }
     }
@@ -201,14 +450,13 @@
         
         if (onlineButton) {
             onlineButton.disabled = isOnline;
+            onlineButton.innerHTML = '<i class="fas fa-power-off"></i> Bring System Online';
         }
         
         if (offlineButton) {
             offlineButton.disabled = !isOnline;
+            offlineButton.innerHTML = '<i class="fas fa-power-off"></i> Take System Offline';
         }
-        
-        // Update local storage to remember system status
-        localStorage.setItem("seoul_grill_system_status", isOnline ? "online" : "offline");
     }
 
     // Update queue display
@@ -223,12 +471,14 @@
         
         if (queueStatusMessage) {
             if (queueCount > 0) {
-                const systemOnline = localStorage.getItem("seoul_grill_system_status") === "online";
-                if (!systemOnline) {
-                    queueStatusMessage.textContent = "These orders will be processed when the system is brought back online.";
-                } else {
-                    queueStatusMessage.textContent = "The system is online. Orders are being processed normally.";
-                }
+                getSystemStatus().then(status => {
+                    const systemOnline = status.status === 1;
+                    if (!systemOnline) {
+                        queueStatusMessage.textContent = "These orders will be processed when the system is brought back online.";
+                    } else {
+                        queueStatusMessage.textContent = "The system is online. Orders are being processed normally.";
+                    }
+                });
             } else {
                 queueStatusMessage.textContent = "No orders are currently queued.";
             }
