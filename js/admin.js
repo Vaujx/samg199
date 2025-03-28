@@ -49,44 +49,65 @@ async function initializeAdminPanel() {
 
 // Check if user is authenticated
 function isAuthenticated() {
-    return localStorage.getItem('seoul_grill_admin_auth') === 'true';
+    const auth = localStorage.getItem('seoul_grill_admin_auth');
+    console.log('Checking authentication:', auth);
+    return auth === 'true';
 }
 
 // Show login form
 function showLoginForm() {
-    document.getElementById('admin-login-container').style.display = 'block';
-    document.getElementById('admin-panel-container').style.display = 'none';
+    console.log('Showing login form');
+    const loginContainer = document.getElementById('admin-login-container');
+    const panelContainer = document.getElementById('admin-panel-container');
+    
+    if (loginContainer) loginContainer.style.display = 'block';
+    if (panelContainer) panelContainer.style.display = 'none';
 }
 
 // Show admin panel
 function showAdminPanel() {
-    document.getElementById('admin-login-container').style.display = 'none';
-    document.getElementById('admin-panel-container').style.display = 'block';
+    console.log('Showing admin panel');
+    const loginContainer = document.getElementById('admin-login-container');
+    const panelContainer = document.getElementById('admin-panel-container');
+    
+    if (loginContainer) loginContainer.style.display = 'none';
+    if (panelContainer) panelContainer.style.display = 'block';
 }
 
 // Authenticate admin
-function authenticateAdmin(event) {
-    event.preventDefault();
+function authenticateAdmin() {
+    console.log('Authenticating admin...');
     
-    const username = document.getElementById('admin-username').value;
-    const password = document.getElementById('admin-password').value;
+    const usernameInput = document.getElementById('admin-username');
+    const passwordInput = document.getElementById('admin-password');
     
-    console.log('Attempting login with:', username, password);
+    if (!usernameInput || !passwordInput) {
+        console.error('Username or password input not found');
+        return;
+    }
+    
+    const username = usernameInput.value;
+    const password = passwordInput.value;
+    
+    console.log('Login attempt with:', username, password);
     
     // Simple authentication for demo purposes
     // In a real application, this should be done securely on the server
     if (username === 'admin' && password === 'admin123') {
+        console.log('Authentication successful');
         localStorage.setItem('seoul_grill_admin_auth', 'true');
         showAdminPanel();
         initializeAdminPanel();
         showNotification('Authentication successful!', 'success');
     } else {
+        console.log('Authentication failed');
         showNotification('Invalid username or password!', 'error');
     }
 }
 
 // Logout admin
 function logoutAdmin() {
+    console.log('Logging out admin');
     localStorage.removeItem('seoul_grill_admin_auth');
     showLoginForm();
     showNotification('Logged out successfully!', 'info');
@@ -814,9 +835,14 @@ window.initializeSystemLog = initializeSystemLog;
 
 // Initialize admin panel when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, checking for admin panel');
+    
     // Check if this is the admin page
     if (document.getElementById('admin-panel-container')) {
         console.log('Admin page detected, initializing...');
+        
+        // Setup login form
+        setupLoginForm();
         
         if (isAuthenticated()) {
             console.log('User is authenticated, showing admin panel');
@@ -825,16 +851,6 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             console.log('User is not authenticated, showing login form');
             showLoginForm();
-        }
-        
-        // Add event listener to login form
-        const loginForm = document.getElementById('admin-login-form');
-        if (loginForm) {
-            console.log('Adding event listener to login form');
-            loginForm.addEventListener('submit', function(event) {
-                event.preventDefault();
-                authenticateAdmin(event);
-            });
         }
         
         // Add event listener to logout button
@@ -858,3 +874,58 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+// Setup login form with direct event handlers
+function setupLoginForm() {
+    console.log('Setting up login form');
+    
+    const loginForm = document.getElementById('admin-login-form');
+    if (!loginForm) {
+        console.error('Login form not found');
+        return;
+    }
+    
+    // Remove any existing event listeners
+    const newLoginForm = loginForm.cloneNode(true);
+    loginForm.parentNode.replaceChild(newLoginForm, loginForm);
+    
+    // Add direct onclick handler to login button
+    const loginButton = document.getElementById('admin-login-button');
+    if (loginButton) {
+        console.log('Adding click handler to login button');
+        loginButton.onclick = function(e) {
+            e.preventDefault();
+            authenticateAdmin();
+            return false;
+        };
+    } else {
+        console.error('Login button not found');
+        
+        // Create a login button if it doesn't exist
+        const submitButton = document.createElement('button');
+        submitButton.id = 'admin-login-button';
+        submitButton.type = 'submit';
+        submitButton.textContent = 'Login';
+        submitButton.className = 'admin-login-button';
+        submitButton.onclick = function(e) {
+            e.preventDefault();
+            authenticateAdmin();
+            return false;
+        };
+        
+        // Find the form and append the button
+        const form = document.getElementById('admin-login-form');
+        if (form) {
+            form.appendChild(submitButton);
+        }
+    }
+    
+    // Add submit handler to the form
+    newLoginForm.onsubmit = function(e) {
+        e.preventDefault();
+        authenticateAdmin();
+        return false;
+    };
+    
+    console.log('Login form setup complete');
+}
