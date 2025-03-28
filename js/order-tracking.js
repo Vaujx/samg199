@@ -6,6 +6,12 @@
 document.addEventListener('DOMContentLoaded', () => {
     console.log('Initializing order tracking...');
     
+    // Set the specific bin ID for order tracking
+    if (CONFIG && CONFIG.BINS) {
+        CONFIG.BINS.ORDER_TRACKING = "67e60dcc8561e97a50f45273";
+        console.log('Set ORDER_TRACKING bin ID:', CONFIG.BINS.ORDER_TRACKING);
+    }
+    
     // Initialize JSONBins
     if (typeof window.initializeJSONBins === 'function') {
         window.initializeJSONBins()
@@ -73,15 +79,38 @@ async function trackOrders() {
     
     try {
         // Show loading state
-        document.getElementById('track-button').innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
-        document.getElementById('track-button').disabled = true;
+        const trackButton = document.getElementById('track-button');
+        const originalButtonText = trackButton.innerHTML;
+        trackButton.innerHTML = '<div class="loading-spinner"></div> Loading...';
+        trackButton.disabled = true;
         
         // Get orders by email
-        const orders = await window.getOrderTrackingByEmail(email);
+        let orders = [];
+        
+        // Try to get orders from the ORDER_TRACKING bin
+        try {
+            const trackingData = await getBinData('ORDER_TRACKING');
+            if (Array.isArray(trackingData)) {
+                orders = trackingData.filter(order => order.customer_email === email);
+            } else {
+                console.warn('ORDER_TRACKING bin data is not an array:', trackingData);
+            }
+        } catch (error) {
+            console.error('Error getting order tracking data:', error);
+            // Fallback to getting orders from the ORDERS bin
+            try {
+                const allOrders = await getBinData('ORDERS');
+                if (Array.isArray(allOrders)) {
+                    orders = allOrders.filter(order => order.customer_email === email);
+                }
+            } catch (fallbackError) {
+                console.error('Error getting fallback order data:', fallbackError);
+            }
+        }
         
         // Reset button
-        document.getElementById('track-button').innerHTML = '<i class="fas fa-search"></i> Track Orders';
-        document.getElementById('track-button').disabled = false;
+        trackButton.innerHTML = originalButtonText;
+        trackButton.disabled = false;
         
         // Display orders
         displayOrders(orders);
@@ -89,8 +118,9 @@ async function trackOrders() {
         console.error('Error tracking orders:', error);
         
         // Reset button
-        document.getElementById('track-button').innerHTML = '<i class="fas fa-search"></i> Track Orders';
-        document.getElementById('track-button').disabled = false;
+        const trackButton = document.getElementById('track-button');
+        trackButton.innerHTML = '<i class="fas fa-search"></i> Track Orders';
+        trackButton.disabled = false;
         
         showNotification('There was an error tracking your orders. Please try again later.', 'error');
     }
@@ -138,7 +168,7 @@ function displayOrders(orders) {
         switch (order.status) {
             case 'processed':
                 statusClass = 'status-processed';
-                statusText = 'Processed';
+                statusText = 'Processing';
                 break;
             case 'queued':
                 statusClass = 'status-queued';
@@ -154,7 +184,7 @@ function displayOrders(orders) {
                 break;
             default:
                 statusClass = 'status-queued';
-                statusText = order.status;
+                statusText = order.status || 'Queued';
         }
         
         // Create tracking steps based on order status
@@ -172,7 +202,7 @@ function displayOrders(orders) {
                 <div class="step ${order.status !== 'queued' ? 'step-active' : ''}">
                     <div class="step-icon">${order.status !== 'queued' ? '<i class="fas fa-check"></i>' : '2'}</div>
                     <div class="step-content">
-                        <div class="step-title">Order Processed</div>
+                        <div class="step-title">Order Processing</div>
                         <div class="step-description">${order.processed_at ? formatDate(order.processed_at) : 'Pending'}</div>
                     </div>
                 </div>
