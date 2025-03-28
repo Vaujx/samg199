@@ -14,6 +14,7 @@ const CONFIG = {
        ORDERS: "67e54c15856fe97a50f3f456", // ORDERS Bin
        SYSTEM_STATUS: "67e54b6d8a456b79667dbebe", // SYSTEM_STATUS Bin
        SYSTEM_LOG: "67e54c2b896bc979a579877a", // SYSTEM_LOG Bin
+       SYSTEM_STATUS_HISTORY: "67e5fbdd561e97a50f4496" // SYSTEM_STATUS_HISTORY Bin
    },
    // Default admin password
    ADMIN_PASSWORD: "admin123",
@@ -75,6 +76,9 @@ const DEFAULT_SYSTEM_STATUS = {
 
 // Default system log
 const DEFAULT_SYSTEM_LOG = [];
+
+// Default system status history
+const DEFAULT_SYSTEM_STATUS_HISTORY = [];
 
 // Default orders
 const DEFAULT_ORDERS = [];
