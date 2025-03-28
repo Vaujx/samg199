@@ -1,577 +1,675 @@
 /**
-* Admin Panel Functionality
-* This file handles the admin panel functionality
-*/
+ * Admin Panel Functionality
+ * This file handles all admin panel related functionality
+ */
 
 // Initialize admin panel
-document.addEventListener("DOMContentLoaded", () => {
-    console.log("Initializing admin panel...");
-
-    // Initialize JSONBins
-    initializeJSONBins()
-        .then(() => {
-            console.log("JSONBins initialized for admin panel");
-            
-            // Initialize system status history
-            return initializeSystemStatusHistory();
-        })
-        .then(() => {
-            // Add event listeners
-            setupAdminEventListeners();
-
-            // Check if admin is already logged in
-            const isLoggedIn = localStorage.getItem("seoul_grill_admin_logged_in") === "true";
-            if (isLoggedIn) {
-                console.log("Admin already logged in, showing dashboard");
-                showAdminDashboard();
-            } else {
-                console.log("Admin not logged in, showing login form");
-            }
-        })
-        .catch((error) => {
-            console.error("Error initializing admin panel:", error);
-            alert("There was an error initializing the admin panel. Please try refreshing the page.");
-        });
-});
-
-// Set up admin event listeners
-function setupAdminEventListeners() {
-    console.log("Setting up admin event listeners");
-
-    // Login button
-    const loginButton = document.getElementById("login-button");
-    if (loginButton) {
-        loginButton.addEventListener("click", handleAdminLogin);
-        console.log("Login button event listener added");
-    }
-
-    // Enter key in password field
-    const passwordInput = document.getElementById("admin_password");
-    if (passwordInput) {
-        passwordInput.addEventListener("keypress", (event) => {
-            if (event.key === "Enter") {
-                handleAdminLogin();
-            }
-        });
-        console.log("Password input event listener added");
-    }
-
-    // Logout button
-    const logoutButton = document.getElementById("logout-button");
-    if (logoutButton) {
-        logoutButton.addEventListener("click", handleAdminLogout);
-        console.log("Logout button event listener added");
-    }
-
-    // System status buttons
-    const onlineButton = document.getElementById("online-button");
-    const offlineButton = document.getElementById("offline-button");
-
-    if (onlineButton) {
-        onlineButton.addEventListener("click", () => {
-            console.log("Bringing system online...");
-            toggleSystemStatus(true);
-        });
-        console.log("Online button event listener added");
-    }
-
-    if (offlineButton) {
-        offlineButton.addEventListener("click", () => {
-            console.log("Taking system offline...");
-            toggleSystemStatus(false);
-        });
-        console.log("Offline button event listener added");
-    }
-
-    // Export button
-    const exportButton = document.getElementById("export-button");
-    if (exportButton) {
-        exportButton.addEventListener("click", exportOrders);
-        console.log("Export button event listener added");
-    }
-
-    // Import button
-    const importButton = document.getElementById("import-button");
-    if (importButton) {
-        importButton.addEventListener("click", importOrders);
-        console.log("Import button event listener added");
-    }
-}
-
-// Toggle system status (online/offline)
-async function toggleSystemStatus(isOnline) {
+async function initializeAdminPanel() {
     try {
-        // Disable buttons during the operation
-        const onlineButton = document.getElementById("online-button");
-        const offlineButton = document.getElementById("offline-button");
+        console.log('Initializing admin panel...');
         
-        if (onlineButton) onlineButton.disabled = true;
-        if (offlineButton) offlineButton.disabled = true;
-        
-        // Update system status in JSONBin
-        await setSystemStatus(isOnline, "admin");
-        
-        // Update UI
-        await loadSystemStatus();
-        await loadQueuedOrders();
-        await loadSystemStatusHistory();
-        
-        // Show notification
-        const message = isOnline 
-            ? "System is now online. Any queued orders will be processed." 
-            : "System is now offline. New orders will be queued.";
-        
-        if (typeof showNotification === 'function') {
-            showNotification(message, isOnline ? "success" : "warning");
-        } else {
-            alert(message);
+        // Check if user is authenticated
+        if (!isAuthenticated()) {
+            showLoginForm();
+            return;
         }
         
-        console.log(`System status successfully set to ${isOnline ? "online" : "offline"}`);
-    } catch (error) {
-        console.error(`Error setting system status to ${isOnline ? "online" : "offline"}:`, error);
-        alert(`Error ${isOnline ? "bringing system online" : "taking system offline"}. Please try again.`);
-    } finally {
-        // Re-enable buttons
-        const onlineButton = document.getElementById("online-button");
-        const offlineButton = document.getElementById("offline-button");
+        // Initialize JSONBins if not already initialized
+        await initializeJSONBins();
         
-        if (onlineButton) onlineButton.disabled = false;
-        if (offlineButton) offlineButton.disabled = false;
+        // Initialize system status display
+        await initializeSystemStatus();
+        
+        // Initialize system status history
+        await initializeSystemStatusHistory();
+        
+        // Initialize order management
+        await initializeOrderManagement();
+        
+        // Initialize system log
+        await initializeSystemLog();
+        
+        console.log('Admin panel initialized successfully');
+    } catch (error) {
+        console.error('Error initializing admin panel:', error);
+        showNotification('Error initializing admin panel. Please try again later.', 'error');
     }
 }
 
-// Handle admin login
-function handleAdminLogin() {
-    console.log("Handling admin login...");
-    const passwordInput = document.getElementById("admin_password");
-    if (passwordInput && passwordInput.value === CONFIG.ADMIN_PASSWORD) {
-        console.log("Admin login successful");
-        localStorage.setItem("seoul_grill_admin_logged_in", "true");
-        showAdminDashboard();
+// Check if user is authenticated
+function isAuthenticated() {
+    return localStorage.getItem('seoul_grill_admin_auth') === 'true';
+}
+
+// Show login form
+function showLoginForm() {
+    document.getElementById('admin-login-container').style.display = 'block';
+    document.getElementById('admin-panel-container').style.display = 'none';
+}
+
+// Show admin panel
+function showAdminPanel() {
+    document.getElementById('admin-login-container').style.display = 'none';
+    document.getElementById('admin-panel-container').style.display = 'block';
+}
+
+// Authenticate admin
+function authenticateAdmin(event) {
+    event.preventDefault();
+    
+    const username = document.getElementById('admin-username').value;
+    const password = document.getElementById('admin-password').value;
+    
+    // Simple authentication for demo purposes
+    // In a real application, this should be done securely on the server
+    if (username === 'admin' && password === 'admin123') {
+        localStorage.setItem('seoul_grill_admin_auth', 'true');
+        showAdminPanel();
+        initializeAdminPanel();
+        showNotification('Authentication successful!', 'success');
     } else {
-        console.log("Admin login failed - incorrect password");
-        alert("Invalid password. Please try again.");
+        showNotification('Invalid username or password!', 'error');
     }
 }
 
-// Handle admin logout
-function handleAdminLogout(e) {
-    e.preventDefault();
-    console.log("Handling admin logout...");
-    localStorage.removeItem("seoul_grill_admin_logged_in");
-    hideAdminDashboard();
-    console.log("Admin logged out successfully");
+// Logout admin
+function logoutAdmin() {
+    localStorage.removeItem('seoul_grill_admin_auth');
+    showLoginForm();
+    showNotification('Logged out successfully!', 'info');
 }
 
-// Show admin dashboard
-function showAdminDashboard() {
-    console.log("Showing admin dashboard");
-    document.getElementById("admin-login").style.display = "none";
-    document.getElementById("admin-dashboard").style.display = "block";
-
-    // Load dashboard data
-    loadSystemStatus();
-    loadQueuedOrders();
-    loadSystemStatusHistory();
-}
-
-// Hide admin dashboard
-function hideAdminDashboard() {
-    console.log("Hiding admin dashboard");
-    document.getElementById("admin-login").style.display = "block";
-    document.getElementById("admin-dashboard").style.display = "none";
-}
-
-// Load system status
-async function loadSystemStatus() {
+// Initialize system status display
+async function initializeSystemStatus() {
     try {
-        console.log("Loading system status...");
-        const systemStatus = await getBinData("SYSTEM_STATUS");
-        const systemOnline = systemStatus.status === 1;
-
-        // Update system status indicator
-        const statusElement = document.getElementById("system-status");
-        if (statusElement) {
-            statusElement.className = `system-status ${systemOnline ? "status-online" : "status-offline"}`;
-            statusElement.textContent = systemOnline ? "System Online" : "System Offline";
-        }
-
-        // Update buttons
-        const onlineButton = document.getElementById("online-button");
-        const offlineButton = document.getElementById("offline-button");
-
-        if (onlineButton) {
-            onlineButton.disabled = systemOnline;
-        }
-
-        if (offlineButton) {
-            offlineButton.disabled = !systemOnline;
-        }
-
-        console.log("System status loaded successfully:", systemOnline ? "Online" : "Offline");
-        return systemOnline;
-    } catch (error) {
-        console.error("Error loading system status:", error);
-        return true; // Default to online if there's an error
-    }
-}
-
-// Load queued orders
-async function loadQueuedOrders() {
-    try {
-        console.log("Loading queued orders...");
-        const orders = await getBinData("ORDERS");
-        const queuedOrders = orders.filter((order) => order.status === "queued");
-
-        // Update queue count
-        const queueCount = document.getElementById("queue-count");
-        if (queueCount) {
-            queueCount.textContent = queuedOrders.length;
-        }
-
-        // Update queue status message
-        const queueStatusMessage = document.getElementById("queue-status-message");
-        if (queueStatusMessage) {
-            if (queuedOrders.length > 0) {
-                const systemOnline = await loadSystemStatus();
-                if (!systemOnline) {
-                    queueStatusMessage.textContent = "These orders will be processed when the system is brought back online.";
-                } else {
-                    queueStatusMessage.textContent = "The system is online. Orders are being processed normally.";
-                }
-            } else {
-                queueStatusMessage.textContent = "No orders are currently queued.";
-            }
-        }
-
-        // Show/hide queued orders section
-        const queuedOrdersSection = document.getElementById("queued-orders-section");
-        if (queuedOrdersSection) {
-            queuedOrdersSection.style.display = queuedOrders.length > 0 ? "block" : "none";
-        }
-
-        // Update queued orders list
-        const queuedOrdersList = document.getElementById("queued-orders-list");
-        if (queuedOrdersList && queuedOrders.length > 0) {
-            queuedOrdersList.innerHTML = "";
-
-            queuedOrders.forEach((order) => {
-                const tr = document.createElement("tr");
-                tr.innerHTML = `
-                    <td>#${order.order_id}</td>
-                    <td>${order.customer_name || "Guest"}</td>
-                    <td>₱${order.total_amount.toFixed(2)}</td>
-                    <td>${new Date(order.queued_at).toLocaleString()}</td>
-                    <td>
-                        <button class="status-button" onclick="toggleOrderDetails('${order.order_id}')">
-                            <i class="fas fa-eye"></i> View
-                        </button>
-                        <div id="order-details-${order.order_id}" class="order-details" style="display: none;">
-                            <strong>Items:</strong>
-                            <ul>
-                                ${Object.entries(order.items)
-                                    .map(([product, quantity]) => `<li>${product} x ${quantity}</li>`)
-                                    .join("")}
-                            </ul>
-                        </div>
-                    </td>
-                `;
-
-                queuedOrdersList.appendChild(tr);
+        console.log('Initializing system status display...');
+        
+        // Get current system status
+        const systemStatus = await getBinData('SYSTEM_STATUS');
+        
+        // Update status toggle
+        const statusToggle = document.getElementById('system-status-toggle');
+        if (statusToggle) {
+            statusToggle.checked = systemStatus.status === 1;
+            
+            // Add event listener to toggle
+            statusToggle.addEventListener('change', async function() {
+                await updateSystemStatus(this.checked ? 1 : 0);
             });
         }
-
-        console.log("Queued orders loaded successfully:", queuedOrders.length, "orders");
-        return queuedOrders;
+        
+        // Update status text
+        updateSystemStatusText(systemStatus.status === 1);
+        
+        console.log('System status display initialized successfully');
     } catch (error) {
-        console.error("Error loading queued orders:", error);
-        return [];
+        console.error('Error initializing system status display:', error);
+        showNotification('Error loading system status. Please try again later.', 'error');
     }
 }
 
-// Load system status history
-async function loadSystemStatusHistory() {
+// Initialize system status history
+async function initializeSystemStatusHistory() {
     try {
-        console.log("Loading system status history...");
-        const statusHistory = await getBinData('SYSTEM_STATUS_HISTORY');
+        console.log('Initializing system status history...');
         
-        // Sort by timestamp (newest first)
-        statusHistory.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+        // Get system log
+        const systemLog = await getBinData('SYSTEM_LOG');
         
-        // Take only the most recent entries (  - new Date(a.updated_at));
+        // Filter status change events
+        const statusChanges = systemLog.filter(log => log.action === 'system_status_updated');
         
-        // Take only the most recent entries (limit to 10)
-        const recentHistory = statusHistory.slice(0, 10);
-
-        // Update status history table
-        const statusHistoryTable = document.getElementById("status-history");
-        if (statusHistoryTable) {
-            statusHistoryTable.innerHTML = "";
-
-            if (recentHistory.length === 0) {
-                const tr = document.createElement("tr");
-                tr.innerHTML = '<td colspan="3">No status changes recorded yet.</td>';
-                statusHistoryTable.appendChild(tr);
-            } else {
-                recentHistory.forEach((entry) => {
-                    const tr = document.createElement("tr");
-                    const isOnline = entry.status === 1;
-                    
-                    tr.innerHTML = `
-                        <td>
-                            ${isOnline 
-                                ? '<span class="status-online"><i class="fas fa-check-circle"></i> System Brought Online</span>'
-                                : '<span class="status-offline"><i class="fas fa-times-circle"></i> System Taken Offline</span>'
-                            }
-                        </td>
-                        <td>${entry.updated_by}</td>
-                        <td>${new Date(entry.updated_at).toLocaleString()}</td>
-                    `;
-
-                    statusHistoryTable.appendChild(tr);
-                });
-            }
+        // Sort by date (newest first)
+        statusChanges.sort((a, b) => new Date(b.performed_at) - new Date(a.performed_at));
+        
+        // Get history container
+        const historyContainer = document.getElementById('system-status-history');
+        if (!historyContainer) return;
+        
+        // Clear existing history
+        historyContainer.innerHTML = '';
+        
+        // Add history items
+        if (statusChanges.length === 0) {
+            historyContainer.innerHTML = '<p>No status changes recorded.</p>';
+        } else {
+            const historyList = document.createElement('ul');
+            historyList.className = 'status-history-list';
+            
+            statusChanges.forEach(change => {
+                const item = document.createElement('li');
+                const date = new Date(change.performed_at);
+                const formattedDate = `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
+                const status = change.description.includes('online') ? 'online' : 'offline';
+                
+                item.innerHTML = `
+                    <span class="status-dot ${status}"></span>
+                    <span class="status-text">System ${status}</span>
+                    <span class="status-date">${formattedDate}</span>
+                    <span class="status-user">by ${change.performed_by}</span>
+                `;
+                
+                historyList.appendChild(item);
+            });
+            
+            historyContainer.appendChild(historyList);
         }
-
-        console.log("System status history loaded successfully:", recentHistory.length, "entries");
-        return recentHistory;
+        
+        console.log('System status history initialized successfully');
     } catch (error) {
-        console.error("Error loading system status history:", error);
-        return [];
+        console.error('Error initializing system status history:', error);
+        showNotification('Error loading system status history. Please try again later.', 'error');
     }
 }
 
-// Toggle order details visibility
-function toggleOrderDetails(orderId) {
-    const detailsElement = document.getElementById(`order-details-${orderId}`);
-    if (detailsElement) {
-        detailsElement.style.display = detailsElement.style.display === "none" ? "block" : "none";
-    }
-}
-
-// Display processing results
-function displayProcessingResults(results) {
-    const processingResults = document.getElementById("processing-results");
-    if (!processingResults) return;
-
-    // Show processing results section
-    processingResults.style.display = "block";
-
-    // Update result counts
-    document.getElementById("total-processed").textContent = results.total;
-    document.getElementById("success-processed").textContent = results.success;
-    document.getElementById("failed-processed").textContent = results.failed;
-
-    // Show/hide failed message
-    const failedMessage = document.getElementById("failed-message");
-    if (failedMessage) {
-        failedMessage.style.display = results.failed > 0 ? "block" : "none";
-    }
-}
-
-// Helper function to pad strings
-function padString(str, length) {
-    str = String(str);
-    return str.length >= length ? str : str + " ".repeat(length - str.length);
-}
-
-// Export orders to text file
-async function exportOrders() {
+// Update system status
+async function updateSystemStatus(status) {
     try {
-        console.log("Exporting orders...");
-        const orders = await getBinData("ORDERS");
-
-        // Generate text content
-        let content = "SEOUL GRILL 199 - ORDER BACKUP\n";
-        content += "Generated: " + new Date().toLocaleString() + "\n";
-        content += "=".repeat(80) + "\n\n";
-
-        content += "ORDER ID     STATUS          AMOUNT          CUSTOMER                  DATE\n";
-        content += "-".repeat(80) + "\n";
-
-        orders.forEach((order) => {
-            content += `#${padString(order.order_id, 10)} ${padString(order.status, 15)} ₱${padString(order.total_amount.toFixed(2), 15)} ${padString(order.customer_name || "Guest", 25)} ${new Date(order.queued_at).toLocaleString()}\n`;
-
-            // Write order items
-            content += "  Items:\n";
-            for (const [product, quantity] of Object.entries(order.items)) {
-                content += `    - ${product} x ${quantity}\n`;
-            }
-
-            // Add processed date if available
-            if (order.processed_at) {
-                content += `  Processed: ${new Date(order.processed_at).toLocaleString()}\n`;
-            }
-
-            content += "-".repeat(80) + "\n";
+        console.log(`Updating system status to ${status}...`);
+        
+        // Get current system status
+        const systemStatus = await getBinData('SYSTEM_STATUS');
+        
+        // Update status
+        systemStatus.status = status;
+        
+        // Update bin data
+        await updateBinData('SYSTEM_STATUS', systemStatus);
+        
+        // Update status text
+        updateSystemStatusText(status === 1);
+        
+        // Log status change
+        const systemLog = await getBinData('SYSTEM_LOG');
+        systemLog.push({
+            action: 'system_status_updated',
+            description: `System status changed to ${status === 1 ? 'online' : 'offline'}`,
+            performed_by: 'admin',
+            performed_at: new Date().toISOString()
         });
-
-        content += "\nTotal Orders: " + orders.length + "\n";
-        content += "End of Backup\n";
-
-        // Create and download file
-        const blob = new Blob([content], { type: "text/plain" });
-        const url = URL.createObjectURL(blob);
-        const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `seoul_grill_orders_${timestamp}.txt`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-
-        // Update last backup info
-        const lastBackup = document.getElementById("last-backup");
-        if (lastBackup) {
-            lastBackup.textContent = `Last backup: ${new Date().toLocaleString()}`;
-        }
-
-        // Show download link
-        const downloadBackup = document.getElementById("download-backup");
-        if (downloadBackup) {
-            downloadBackup.href = url;
-            downloadBackup.style.display = "inline-flex";
-        }
-
-        console.log("Orders exported successfully");
+        await updateBinData('SYSTEM_LOG', systemLog);
+        
+        // Refresh status history
+        await initializeSystemStatusHistory();
+        
+        // Show notification
+        showNotification(`System status updated to ${status === 1 ? 'online' : 'offline'}!`, 'success');
+        
+        console.log(`System status updated to ${status} successfully`);
     } catch (error) {
-        console.error("Error exporting orders:", error);
-        alert("Error exporting orders. Please try again.");
+        console.error('Error updating system status:', error);
+        showNotification('Error updating system status. Please try again later.', 'error');
     }
 }
 
-// Import orders from text file
-async function importOrders() {
-    const fileInput = document.getElementById("import-file");
-    if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
-        alert("Please select a file to import.");
-        return;
+// Update system status text
+function updateSystemStatusText(isOnline) {
+    const statusText = document.getElementById('system-status-text');
+    if (statusText) {
+        statusText.textContent = isOnline ? 'Online' : 'Offline';
+        statusText.className = isOnline ? 'status-online' : 'status-offline';
     }
+}
 
-    console.log("Importing orders...");
-    const file = fileInput.files[0];
-    const reader = new FileReader();
-
-    reader.onload = async (e) => {
-        try {
-            const content = e.target.result;
-            const lines = content.split("\n");
-
-            let currentOrder = null;
-            let importedCount = 0;
-            let orderItems = {};
-
-            // Get current orders
-            const existingOrders = await getBinData("ORDERS");
-            const existingOrderIds = new Set(existingOrders.map((order) => order.order_id));
-
-            for (const line of lines) {
-                // Skip header lines
-                if (
-                    line.includes("SEOUL GRILL 199") ||
-                    line.includes("Generated:") ||
-                    line.startsWith("=") ||
-                    line.includes("ORDER ID") ||
-                    line.includes("Total Orders:") ||
-                    line.includes("End of Backup") ||
-                    line.startsWith("-")
-                ) {
-                    continue;
-                }
-
-                // Check if this is an order line (starts with #)
-                const orderMatch = line.match(/^#(\d+)\s+(\w+)\s+₱([\d,.]+)\s+(.+?)\s+(.+)$/);
-                if (orderMatch) {
-                    // If we have a previous order, save it first
-                    if (currentOrder) {
-                        // Only add if order ID doesn't already exist
-                        if (!existingOrderIds.has(currentOrder.order_id)) {
-                            currentOrder.items = orderItems;
-                            existingOrders.push(currentOrder);
-                            existingOrderIds.add(currentOrder.order_id);
-                            importedCount++;
-                        }
-                        orderItems = {};
-                    }
-
-                    // Parse the new order
-                    const orderId = orderMatch[1];
-                    const status = orderMatch[2];
-                    const amount = Number.parseFloat(orderMatch[3].replace(",", ""));
-                    const customer = orderMatch[4].trim();
-                    const date = orderMatch[5].trim();
-
-                    currentOrder = {
-                        order_id: orderId,
-                        status: status,
-                        total_amount: amount,
-                        customer_name: customer !== "Guest" ? customer : null,
-                        queued_at: new Date(date).toISOString(),
-                        processed_at: null,
-                    };
-                }
-                // Check if this is an item line
-                else if (currentOrder && line.match(/^\s+- (.+) x (\d+)$/)) {
-                    const itemMatch = line.match(/^\s+- (.+) x (\d+)$/);
-                    const product = itemMatch[1];
-                    const quantity = Number.parseInt(itemMatch[2], 10);
-                    orderItems[product] = quantity;
-                }
-                // Check if this is a processed date line
-                else if (currentOrder && line.match(/^\s+Processed: (.+)$/)) {
-                    const processedMatch = line.match(/^\s+Processed: (.+)$/);
-                    currentOrder.processed_at = new Date(processedMatch[1]).toISOString();
-                }
-            }
-
-            // Save the last order if exists
-            if (currentOrder && !existingOrderIds.has(currentOrder.order_id)) {
-                currentOrder.items = orderItems;
-                existingOrders.push(currentOrder);
-                importedCount++;
-            }
-
-            // Update orders in JSONBin
-            await updateBinData("ORDERS", existingOrders);
-
-            // Show import results
-            const importResults = document.getElementById("import-results");
-            const importMessage = document.getElementById("import-message");
-
-            if (importResults && importMessage) {
-                importResults.style.display = "block";
-                importMessage.innerHTML = `<i class="fas fa-check-circle"></i> <strong>Success:</strong> Successfully imported ${importedCount} orders.`;
-            }
-
-            // Reload queued orders
-            loadQueuedOrders();
-
-            console.log("Orders imported successfully:", importedCount, "orders");
-        } catch (error) {
-            console.error("Error importing orders:", error);
-
-            // Show error message
-            const importResults = document.getElementById("import-results");
-            const importMessage = document.getElementById("import-message");
-
-            if (importResults && importMessage) {
-                importResults.style.display = "block";
-                importMessage.innerHTML = `<i class="fas fa-times-circle"></i> <strong>Error:</strong> ${error.message}`;
+// Initialize order management
+async function initializeOrderManagement() {
+    try {
+        console.log('Initializing order management...');
+        
+        // Get orders
+        const orders = await getBinData('ORDERS');
+        
+        // Sort by date (newest first)
+        orders.sort((a, b) => new Date(b.queued_at) - new Date(a.queued_at));
+        
+        // Get orders container
+        const ordersContainer = document.getElementById('orders-container');
+        if (!ordersContainer) return;
+        
+        // Clear existing orders
+        ordersContainer.innerHTML = '';
+        
+        // Add orders
+        if (orders.length === 0) {
+            ordersContainer.innerHTML = '<p>No orders found.</p>';
+        } else {
+            const table = document.createElement('table');
+            table.className = 'orders-table';
+            
+            // Add table header
+            const thead = document.createElement('thead');
+            thead.innerHTML = `
+                <tr>
+                    <th>Order ID</th>
+                    <th>Customer</th>
+                    <th>Items</th>
+                    <th>Total</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                    <th>Actions</th>
+                </tr>
+            `;
+            table.appendChild(thead);
+            
+            // Add table body
+            const tbody = document.createElement('tbody');
+            
+            orders.forEach(order => {
+                const tr = document.createElement('tr');
+                
+                // Format items
+                const itemsList = Object.entries(order.items)
+                    .map(([item, quantity]) => `${item} x ${quantity}`)
+                    .join('<br>');
+                
+                // Format date
+                const date = new Date(order.queued_at);
+                const formattedDate = `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
+                
+                tr.innerHTML = `
+                    <td>${order.order_id}</td>
+                    <td>${order.customer_email || 'Guest'}</td>
+                    <td>${itemsList}</td>
+                    <td>₱${order.total_amount.toFixed(2)}</td>
+                    <td class="order-status ${order.status}">${order.status}</td>
+                    <td>${formattedDate}</td>
+                    <td>
+                        <button class="view-order-button" data-order-id="${order.order_id}">View</button>
+                        ${order.status === 'queued' ? `<button class="process-order-button" data-order-id="${order.order_id}">Process</button>` : ''}
+                    </td>
+                `;
+                
+                tbody.appendChild(tr);
+            });
+            
+            table.appendChild(tbody);
+            ordersContainer.appendChild(table);
+            
+            // Add event listeners to buttons
+            document.querySelectorAll('.view-order-button').forEach(button => {
+                button.addEventListener('click', function() {
+                    const orderId = this.getAttribute('data-order-id');
+                    viewOrder(orderId);
+                });
+            });
+            
+            document.querySelectorAll('.process-order-button').forEach(button => {
+                button.addEventListener('click', async function() {
+                    const orderId = this.getAttribute('data-order-id');
+                    await processOrder(orderId);
+                });
+            });
+        }
+        
+        // Add process all button if there are queued orders
+        const queuedOrders = orders.filter(order => order.status === 'queued');
+        const processAllContainer = document.getElementById('process-all-container');
+        
+        if (processAllContainer) {
+            if (queuedOrders.length > 0) {
+                processAllContainer.innerHTML = `
+                    <button id="process-all-button">Process All Queued Orders (${queuedOrders.length})</button>
+                `;
+                
+                document.getElementById('process-all-button').addEventListener('click', processAllOrders);
+            } else {
+                processAllContainer.innerHTML = '';
             }
         }
-    };
-
-    reader.readAsText(file);
+        
+        console.log('Order management initialized successfully');
+    } catch (error) {
+        console.error('Error initializing order management:', error);
+        showNotification('Error loading orders. Please try again later.', 'error');
+    }
 }
 
-// Update file name display
-function updateFileName(input) {
-    const fileName = input.files[0] ? input.files[0].name : "No file chosen";
-    document.getElementById("file-name").textContent = fileName;
+// View order details
+async function viewOrder(orderId) {
+    try {
+        console.log(`Viewing order ${orderId}...`);
+        
+        // Get orders
+        const orders = await getBinData('ORDERS');
+        
+        // Find order
+        const order = orders.find(o => o.order_id === orderId);
+        
+        if (!order) {
+            showNotification(`Order #${orderId} not found!`, 'error');
+            return;
+        }
+        
+        // Get modal elements
+        const modal = document.getElementById('orderDetailsModal');
+        const modalContent = document.getElementById('order-details-content');
+        
+        if (!modal || !modalContent) return;
+        
+        // Format items
+        const itemsList = Object.entries(order.items)
+            .map(([item, quantity]) => `<li>${item} x ${quantity}</li>`)
+            .join('');
+        
+        // Format dates
+        const queuedDate = new Date(order.queued_at);
+        const formattedQueuedDate = `${queuedDate.toLocaleDateString()} ${queuedDate.toLocaleTimeString()}`;
+        
+        let formattedProcessedDate = 'Not processed yet';
+        if (order.processed_at) {
+            const processedDate = new Date(order.processed_at);
+            formattedProcessedDate = `${processedDate.toLocaleDateString()} ${processedDate.toLocaleTimeString()}`;
+        }
+        
+        // Update modal content
+        modalContent.innerHTML = `
+            <h3>Order #${order.order_id}</h3>
+            <p><strong>Customer:</strong> ${order.customer_email || 'Guest'}</p>
+            <p><strong>Status:</strong> <span class="order-status ${order.status}">${order.status}</span></p>
+            <p><strong>Total Amount:</strong> ₱${order.total_amount.toFixed(2)}</p>
+            <p><strong>Payment Method:</strong> ${order.payment_method}</p>
+            <p><strong>Queued At:</strong> ${formattedQueuedDate}</p>
+            <p><strong>Processed At:</strong> ${formattedProcessedDate}</p>
+            
+            <h4>Items:</h4>
+            <ul>
+                ${itemsList}
+            </ul>
+            
+            ${order.status === 'queued' ? `<button id="modal-process-button" data-order-id="${order.order_id}">Process Order</button>` : ''}
+        `;
+        
+        // Show modal
+        modal.style.display = 'block';
+        
+        // Add event listener to process button
+        const processButton = document.getElementById('modal-process-button');
+        if (processButton) {
+            processButton.addEventListener('click', async function() {
+                const orderId = this.getAttribute('data-order-id');
+                await processOrder(orderId);
+                closeOrderDetailsModal();
+            });
+        }
+        
+        console.log(`Order ${orderId} details displayed successfully`);
+    } catch (error) {
+        console.error(`Error viewing order ${orderId}:`, error);
+        showNotification('Error loading order details. Please try again later.', 'error');
+    }
 }
 
-// Make toggleOrderDetails globally available
-window.toggleOrderDetails = toggleOrderDetails;
+// Close order details modal
+function closeOrderDetailsModal() {
+    const modal = document.getElementById('orderDetailsModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+// Process order
+async function processOrder(orderId) {
+    try {
+        console.log(`Processing order ${orderId}...`);
+        
+        // Update order status
+        await updateOrderStatus(orderId, 'processed', 'admin');
+        
+        // Refresh order management
+        await initializeOrderManagement();
+        
+        // Show notification
+        showNotification(`Order #${orderId} processed successfully!`, 'success');
+        
+        console.log(`Order ${orderId} processed successfully`);
+    } catch (error) {
+        console.error(`Error processing order ${orderId}:`, error);
+        showNotification('Error processing order. Please try again later.', 'error');
+    }
+}
+
+// Process all queued orders
+async function processAllOrders() {
+    try {
+        console.log('Processing all queued orders...');
+        
+        // Show loading spinner
+        showLoadingSpinner('Processing all queued orders...');
+        
+        // Process queued orders
+        const result = await processQueuedOrders();
+        
+        // Hide loading spinner
+        hideLoadingSpinner();
+        
+        // Refresh order management
+        await initializeOrderManagement();
+        
+        // Show notification
+        showNotification(`Processed ${result.success} out of ${result.total} orders!`, result.failed > 0 ? 'warning' : 'success');
+        
+        console.log('All queued orders processed successfully');
+    } catch (error) {
+        console.error('Error processing all queued orders:', error);
+        
+        // Hide loading spinner
+        hideLoadingSpinner();
+        
+        showNotification('Error processing orders. Please try again later.', 'error');
+    }
+}
+
+// Initialize system log
+async function initializeSystemLog() {
+    try {
+        console.log('Initializing system log...');
+        
+        // Get system log
+        const systemLog = await getBinData('SYSTEM_LOG');
+        
+        // Sort by date (newest first)
+        systemLog.sort((a, b) => new Date(b.performed_at) - new Date(a.performed_at));
+        
+        // Get log container
+        const logContainer = document.getElementById('system-log-container');
+        if (!logContainer) return;
+        
+        // Clear existing log
+        logContainer.innerHTML = '';
+        
+        // Add log items
+        if (systemLog.length === 0) {
+            logContainer.innerHTML = '<p>No log entries found.</p>';
+        } else {
+            const table = document.createElement('table');
+            table.className = 'system-log-table';
+            
+            // Add table header
+            const thead = document.createElement('thead');
+            thead.innerHTML = `
+                <tr>
+                    <th>Date</th>
+                    <th>Action</th>
+                    <th>Description</th>
+                    <th>Performed By</th>
+                </tr>
+            `;
+            table.appendChild(thead);
+            
+            // Add table body
+            const tbody = document.createElement('tbody');
+            
+            systemLog.forEach(log => {
+                const tr = document.createElement('tr');
+                
+                // Format date
+                const date = new Date(log.performed_at);
+                const formattedDate = `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
+                
+                tr.innerHTML = `
+                    <td>${formattedDate}</td>
+                    <td>${log.action}</td>
+                    <td>${log.description}</td>
+                    <td>${log.performed_by}</td>
+                `;
+                
+                tbody.appendChild(tr);
+            });
+            
+            table.appendChild(tbody);
+            logContainer.appendChild(table);
+        }
+        
+        console.log('System log initialized successfully');
+    } catch (error) {
+        console.error('Error initializing system log:', error);
+        showNotification('Error loading system log. Please try again later.', 'error');
+    }
+}
+
+// Add loading spinner functions if not already defined
+if (typeof showLoadingSpinner !== 'function') {
+    // Add CSS for loading spinner
+    function addLoadingSpinnerStyles() {
+        // Check if styles already exist
+        if (document.getElementById('loading-spinner-styles')) return;
+        
+        const style = document.createElement('style');
+        style.id = 'loading-spinner-styles';
+        style.textContent = `
+            .loading-spinner-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background-color: rgba(0, 0, 0, 0.7);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 2000;
+            }
+            
+            .loading-spinner {
+                width: 50px;
+                height: 50px;
+                border: 5px solid rgba(255, 255, 255, 0.3);
+                border-radius: 50%;
+                border-top-color: #fff;
+                animation: spin 1s ease-in-out infinite;
+            }
+            
+            .loading-text {
+                color: white;
+                margin-top: 20px;
+                font-size: 18px;
+                text-align: center;
+            }
+            
+            @keyframes spin {
+                to { transform: rotate(360deg); }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    // Show loading spinner
+    function showLoadingSpinner(message = 'Loading...') {
+        // Add styles if not already added
+        addLoadingSpinnerStyles();
+        
+        // Create spinner overlay
+        const overlay = document.createElement('div');
+        overlay.className = 'loading-spinner-overlay';
+        overlay.id = 'loading-spinner-overlay';
+        
+        // Create spinner container
+        const container = document.createElement('div');
+        container.style.display = 'flex';
+        container.style.flexDirection = 'column';
+        container.style.alignItems = 'center';
+        
+        // Create spinner
+        const spinner = document.createElement('div');
+        spinner.className = 'loading-spinner';
+        
+        // Create text
+        const text = document.createElement('div');
+        text.className = 'loading-text';
+        text.textContent = message;
+        
+        // Assemble elements
+        container.appendChild(spinner);
+        container.appendChild(text);
+        overlay.appendChild(container);
+        document.body.appendChild(overlay);
+    }
+
+    // Hide loading spinner
+    function hideLoadingSpinner() {
+        const overlay = document.getElementById('loading-spinner-overlay');
+        if (overlay) {
+            overlay.remove();
+        }
+    }
+    
+    // Make functions available globally
+    window.showLoadingSpinner = showLoadingSpinner;
+    window.hideLoadingSpinner = hideLoadingSpinner;
+}
+
+// Make functions available globally
+window.initializeAdminPanel = initializeAdminPanel;
+window.isAuthenticated = isAuthenticated;
+window.showLoginForm = showLoginForm;
+window.showAdminPanel = showAdminPanel;
+window.authenticateAdmin = authenticateAdmin;
+window.logoutAdmin = logoutAdmin;
+window.initializeSystemStatus = initializeSystemStatus;
+window.initializeSystemStatusHistory = initializeSystemStatusHistory;
+window.updateSystemStatus = updateSystemStatus;
+window.initializeOrderManagement = initializeOrderManagement;
+window.viewOrder = viewOrder;
+window.closeOrderDetailsModal = closeOrderDetailsModal;
+window.processOrder = processOrder;
+window.processAllOrders = processAllOrders;
+window.initializeSystemLog = initializeSystemLog;
+
+// Initialize admin panel when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if this is the admin page
+    if (document.getElementById('admin-panel-container')) {
+        if (isAuthenticated()) {
+            showAdminPanel();
+            initializeAdminPanel();
+        } else {
+            showLoginForm();
+        }
+        
+        // Add event listener to login form
+        const loginForm = document.getElementById('admin-login-form');
+        if (loginForm) {
+            loginForm.addEventListener('submit', authenticateAdmin);
+        }
+        
+        // Add event listener to logout button
+        const logoutButton = document.getElementById('admin-logout-button');
+        if (logoutButton) {
+            logoutButton.addEventListener('click', logoutAdmin);
+        }
+        
+        // Add event listener to close modal button
+        const closeModalButton = document.getElementById('close-order-details-modal');
+        if (closeModalButton) {
+            closeModalButton.addEventListener('click', closeOrderDetailsModal);
+        }
+        
+        // Close modal when clicking outside
+        window.addEventListener('click', function(event) {
+            const modal = document.getElementById('orderDetailsModal');
+            if (modal && event.target === modal) {
+                closeOrderDetailsModal();
+            }
+        });
+    }
+});
