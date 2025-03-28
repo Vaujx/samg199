@@ -9,8 +9,8 @@ if (typeof window.CONFIG === 'undefined') {
         ADMIN_PASSWORD: "admin123",
         BIN_IDS: {
             SYSTEM_STATUS: "67e54b6d8a456b79667dbebe", // The specific bin ID from your image
-            ORDERS: "orders_bin_id", // Replace with your actual orders bin ID
-            SYSTEM_LOG: "system_log_bin_id" // Replace with your actual system log bin ID
+            ORDERS: "67e54c158561e97a50f3f456", // Replace with your actual orders bin ID
+            SYSTEM_LOG: "67e54c2b8960c979a579877a" // Replace with your actual system log bin ID
         }
     };
 } else {
@@ -18,8 +18,8 @@ if (typeof window.CONFIG === 'undefined') {
     window.CONFIG.ADMIN_PASSWORD = "admin123";
     window.CONFIG.BIN_IDS = window.CONFIG.BIN_IDS || {};
     window.CONFIG.BIN_IDS.SYSTEM_STATUS = "67e54b6d8a456b79667dbebe";
-    window.CONFIG.BIN_IDS.ORDERS = window.CONFIG.BIN_IDS.ORDERS || "orders_bin_id";
-    window.CONFIG.BIN_IDS.SYSTEM_LOG = window.CONFIG.BIN_IDS.SYSTEM_LOG || "system_log_bin_id";
+    window.CONFIG.BIN_IDS.ORDERS = window.CONFIG.BIN_IDS.ORDERS || "67e54c158561e97a50f3f456";
+    window.CONFIG.BIN_IDS.SYSTEM_LOG = window.CONFIG.BIN_IDS.SYSTEM_LOG || "67e54c2b8960c979a579877a";
 }
 
 // For local reference, use the global CONFIG
