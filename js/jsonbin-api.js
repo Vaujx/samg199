@@ -3,13 +3,19 @@
  * This file handles all interactions with the JSONBin.io API
  */
 
+// Declare showNotification (assuming it's a global function or imported elsewhere)
+let showNotification = window.showNotification || function(message, type) {
+   console.log(`Notification: ${message} (Type: ${type})`);
+};
+
 // Initialize JSONBin.io
 async function initializeJSONBins() {
     try {
         console.log('Initializing JSONBin.io...');
         
         // Check if all bin IDs are set in CONFIG
-        if (CONFIG.BINS.PRODUCTS && CONFIG.BINS.ORDERS && CONFIG.BINS.SYSTEM_STATUS && CONFIG.BINS.SYSTEM_LOG) {
+        if (CONFIG.BINS.PRODUCTS && CONFIG.BINS.ORDERS && CONFIG.BINS.SYSTEM_STATUS && 
+            CONFIG.BINS.SYSTEM_LOG && CONFIG.BINS.SYSTEM_STATUS_HISTORY) {
             console.log('Using fixed bin IDs:', CONFIG.BINS);
             
             // Verify bins exist by trying to access system status
@@ -19,18 +25,92 @@ async function initializeJSONBins() {
                 return true;
             } catch (error) {
                 console.error('Error accessing bins with fixed IDs:', error);
-                console.log('Continuing with default values');
                 return false;
             }
-        } else {
-            console.error('Missing bin IDs in configuration');
-            console.log('Continuing with default values');
-            return false;
         }
+        
+        // Check if we have bin IDs in localStorage
+        const storedBins = localStorage.getItem('seoul_grill_bins');
+        if (storedBins) {
+            CONFIG.BINS = JSON.parse(storedBins);
+            console.log('Loaded bin IDs from localStorage:', CONFIG.BINS);
+            
+            // Verify bins still exist by trying to access one
+            try {
+                await getBinData('SYSTEM_STATUS');
+                console.log('Verified bin access is working');
+                return true;
+            } catch (error) {
+                console.warn('Stored bins are invalid, recreating them...');
+                // Continue to recreate bins
+            }
+        }
+        
+        // Create bins for each data type
+        await createBinIfNotExists('PRODUCTS', DEFAULT_PRODUCTS);
+        await createBinIfNotExists('ORDERS', DEFAULT_ORDERS);
+        await createBinIfNotExists('SYSTEM_STATUS', DEFAULT_SYSTEM_STATUS);
+        await createBinIfNotExists('SYSTEM_LOG', DEFAULT_SYSTEM_LOG);
+        await createBinIfNotExists('SYSTEM_STATUS_HISTORY', [DEFAULT_SYSTEM_STATUS]);
+        
+        // Save bin IDs to localStorage
+        localStorage.setItem('seoul_grill_bins', JSON.stringify(CONFIG.BINS));
+        console.log('Created and saved bin IDs:', CONFIG.BINS);
+        
+        // Log initialization in system log
+        const systemLog = await getBinData('SYSTEM_LOG');
+        systemLog.push({
+            action: 'system_initialized',
+            description: 'System initialized with default data',
+            performed_by: 'system',
+            performed_at: new Date().toISOString(),
+            version: CONFIG.VERSION
+        });
+        await updateBinData('SYSTEM_LOG', systemLog);
+        
+        return true;
     } catch (error) {
         console.error('Error initializing JSONBins:', error);
-        console.log('Continuing with default values');
+        
+        // Show error notification if available
+        if (typeof showNotification === 'function') {
+            showNotification('Error initializing database. Some features may not work properly.', 'error');
+        }
+        
         return false;
+    }
+}
+
+// Create a bin if it doesn't exist
+async function createBinIfNotExists(binType, defaultData) {
+    if (CONFIG.BINS[binType]) {
+        return CONFIG.BINS[binType];
+    }
+    
+    try {
+        console.log(`Creating ${binType} bin...`);
+        const response = await fetch(CONFIG.JSONBIN_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Master-Key': CONFIG.MASTER_KEY,
+                'X-Bin-Private': 'false',
+                'X-Bin-Name': `seoul_grill_${binType.toLowerCase()}_${Date.now()}`
+            },
+            body: JSON.stringify(defaultData)
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Failed to create ${binType} bin: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        CONFIG.BINS[binType] = data.metadata.id;
+        console.log(`Created ${binType} bin with ID: ${CONFIG.BINS[binType]}`);
+        return data.metadata.id;
+    } catch (error) {
+        console.error(`Error creating ${binType} bin:`, error);
+        throw error;
     }
 }
 
@@ -69,6 +149,8 @@ async function getBinData(binType) {
             return DEFAULT_SYSTEM_LOG;
         } else if (binType === 'ORDERS') {
             return DEFAULT_ORDERS;
+        } else if (binType === 'SYSTEM_STATUS_HISTORY') {
+            return [DEFAULT_SYSTEM_STATUS];
         }
         
         return null;
@@ -215,6 +297,28 @@ async function addToSystemStatusHistory(statusEntry) {
         return true;
     } catch (error) {
         console.error('Error adding to system status history:', error);
+        return false;
+    }
+}
+
+// Initialize SYSTEM_STATUS_HISTORY bin
+async function initializeSystemStatusHistory() {
+    try {
+        // Check if the bin exists and has data
+        const history = await getBinData('SYSTEM_STATUS_HISTORY');
+        
+        if (!history || history.length === 0) {
+            // Create initial entry based on current system status
+            const systemStatus = await getBinData('SYSTEM_STATUS');
+            
+            // Add the current status as the first history entry
+            await updateBinData('SYSTEM_STATUS_HISTORY', [systemStatus]);
+            console.log('System status history initialized with current status');
+        }
+        
+        return true;
+    } catch (error) {
+        console.error('Error initializing system status history:', error);
         return false;
     }
 }
@@ -404,12 +508,14 @@ async function backupAllData() {
         const orders = await getBinData('ORDERS');
         const systemStatus = await getBinData('SYSTEM_STATUS');
         const systemLog = await getBinData('SYSTEM_LOG');
+        const systemStatusHistory = await getBinData('SYSTEM_STATUS_HISTORY');
         
         const backup = {
             products,
             orders,
             systemStatus,
             systemLog,
+            systemStatusHistory,
             timestamp: new Date().toISOString(),
             version: CONFIG.VERSION
         };
@@ -434,6 +540,11 @@ async function restoreFromBackup(backup, restoredBy = 'system') {
         await updateBinData('ORDERS', backup.orders);
         await updateBinData('SYSTEM_STATUS', backup.systemStatus);
         
+        // Restore system status history if available
+        if (backup.systemStatusHistory) {
+            await updateBinData('SYSTEM_STATUS_HISTORY', backup.systemStatusHistory);
+        }
+        
         // Add restoration log entry
         const systemLog = backup.systemLog || [];
         systemLog.push({
@@ -449,4 +560,28 @@ async function restoreFromBackup(backup, restoredBy = 'system') {
         console.error('Error restoring from backup:', error);
         throw error;
     }
+}
+
+// Check if running on GitHub Pages
+function isRunningOnGitHubPages() {
+    return window.location.hostname.endsWith('github.io');
+}
+
+// Auto-initialize on GitHub Pages if enabled
+if (CONFIG.AUTO_INIT && isRunningOnGitHubPages()) {
+    console.log('Auto-initializing on GitHub Pages...');
+    window.addEventListener('load', () => {
+        setTimeout(() => {
+            initializeJSONBins()
+                .then(success => {
+                    console.log('Auto-initialization result:', success ? 'Success' : 'Failed');
+                    if (success) {
+                        return initializeSystemStatusHistory();
+                    }
+                })
+                .catch(error => {
+                    console.error('Auto-initialization error:', error);
+                });
+        }, 1000); // Delay initialization to ensure page is fully loaded
+    });
 }
