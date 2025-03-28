@@ -19,23 +19,17 @@ async function initializeJSONBins() {
                 return true;
             } catch (error) {
                 console.error('Error accessing bins with fixed IDs:', error);
-                if (typeof showNotification === 'function') {
-                    showNotification('Error accessing database. Please check your bin IDs.', 'error');
-                }
+                console.log('Continuing with default values');
                 return false;
             }
         } else {
             console.error('Missing bin IDs in configuration');
-            if (typeof showNotification === 'function') {
-                showNotification('Missing bin IDs in configuration. Please set all bin IDs.', 'error');
-            }
+            console.log('Continuing with default values');
             return false;
         }
     } catch (error) {
         console.error('Error initializing JSONBins:', error);
-        if (typeof showNotification === 'function') {
-            showNotification('Error initializing database. Some features may not work properly.', 'error');
-        }
+        console.log('Continuing with default values');
         return false;
     }
 }
@@ -414,9 +408,4 @@ async function restoreFromBackup(backup, restoredBy = 'system') {
         console.error('Error restoring from backup:', error);
         throw error;
     }
-}
-
-// Check if running on GitHub Pages
-function isRunningOnGitHubPages() {
-    return window.location.hostname.endsWith('github.io');
 }
