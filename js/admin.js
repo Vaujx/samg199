@@ -4,9 +4,9 @@
  */
 
 // Declare CONFIG variable
-const CONFIG = {
-    ADMIN_PASSWORD: "password123" // Replace with a more secure password
-};
+//const CONFIG = {
+    //ADMIN_PASSWORD: "password123" // Replace with a more secure password
+//};
 
 // Initialize admin panel
 document.addEventListener("DOMContentLoaded", () => {
