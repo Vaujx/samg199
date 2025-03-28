@@ -99,22 +99,26 @@ async function initializeJSONBins() {
 async function fixOrderTrackingBin() {
     try {
         console.log('Checking ORDER_TRACKING bin structure...');
-        const trackingData = await getBinData('ORDER_TRACKING');
         
-        // Check if trackingData is a nested array or not an array at all
-        if (Array.isArray(trackingData) && trackingData.length > 0 && Array.isArray(trackingData[0]) && trackingData[0].length === 0) {
-            console.log('ORDER_TRACKING bin has incorrect structure [[]], fixing it...');
-            await updateBinData('ORDER_TRACKING', []);
-            console.log('ORDER_TRACKING bin fixed successfully');
-        } else if (!Array.isArray(trackingData)) {
-            console.log('ORDER_TRACKING bin is not an array, fixing it...');
-            await updateBinData('ORDER_TRACKING', []);
-            console.log('ORDER_TRACKING bin fixed successfully');
-        } else {
-            console.log('ORDER_TRACKING bin structure is correct');
+        // Direct approach to fix the bin
+        const response = await fetch(`${CONFIG.JSONBIN_URL}/${CONFIG.BINS.ORDER_TRACKING}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Master-Key': CONFIG.MASTER_KEY
+            },
+            body: JSON.stringify([]) // Initialize as empty array
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Failed to fix ORDER_TRACKING bin: ${response.status}`);
         }
+        
+        console.log('ORDER_TRACKING bin fixed successfully');
+        return true;
     } catch (error) {
         console.error('Error fixing ORDER_TRACKING bin:', error);
+        return false;
     }
 }
 
@@ -281,24 +285,27 @@ async function addOrderToTracking(order) {
         // Make sure order has customer_email
         if (!order.customer_email) {
             console.warn('Order missing customer_email, tracking may not work properly');
+            return false;
         }
         
-        // Get current tracking data
-        let trackingData = [];
-        try {
-            // First try to get existing tracking data
-            trackingData = await getBinData('ORDER_TRACKING');
-            
-            // Ensure trackingData is a proper array (not nested)
-            if (Array.isArray(trackingData) && trackingData.length > 0 && Array.isArray(trackingData[0])) {
-                console.warn('ORDER_TRACKING data is a nested array, fixing it');
-                trackingData = [];
-            } else if (!Array.isArray(trackingData)) {
-                console.warn('ORDER_TRACKING data is not an array, initializing as empty array');
-                trackingData = [];
+        // Get current tracking data - use direct fetch to ensure we get the latest data
+        const response = await fetch(`${CONFIG.JSONBIN_URL}/${CONFIG.BINS.ORDER_TRACKING}/latest`, {
+            method: 'GET',
+            headers: {
+                'X-Master-Key': CONFIG.MASTER_KEY
             }
-        } catch (error) {
-            console.warn('Error getting tracking data, initializing as empty array:', error);
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Failed to get ORDER_TRACKING data: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        let trackingData = data.record;
+        
+        // Ensure trackingData is an array
+        if (!Array.isArray(trackingData)) {
+            console.warn('ORDER_TRACKING data is not an array, initializing as empty array');
             trackingData = [];
         }
         
@@ -306,7 +313,18 @@ async function addOrderToTracking(order) {
         trackingData.push(order);
         
         // Update tracking data in bin
-        await updateBinData('ORDER_TRACKING', trackingData);
+        const updateResponse = await fetch(`${CONFIG.JSONBIN_URL}/${CONFIG.BINS.ORDER_TRACKING}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Master-Key': CONFIG.MASTER_KEY
+            },
+            body: JSON.stringify(trackingData)
+        });
+        
+        if (!updateResponse.ok) {
+            throw new Error(`Failed to update ORDER_TRACKING data: ${updateResponse.status}`);
+        }
         
         console.log('Order added to tracking successfully');
         return true;
@@ -322,14 +340,22 @@ async function getOrderTrackingByEmail(email) {
         console.log(`Getting order tracking for email: ${email}`);
         
         // Get all tracking data
-        let trackingData = await getBinData('ORDER_TRACKING');
+        const response = await fetch(`${CONFIG.JSONBIN_URL}/${CONFIG.BINS.ORDER_TRACKING}/latest`, {
+            method: 'GET',
+            headers: {
+                'X-Master-Key': CONFIG.MASTER_KEY
+            }
+        });
         
-        // Ensure trackingData is a proper array (not nested)
-        if (Array.isArray(trackingData) && trackingData.length > 0 && Array.isArray(trackingData[0])) {
-            console.warn('ORDER_TRACKING data is a nested array, fixing it');
-            await updateBinData('ORDER_TRACKING', []);
-            return [];
-        } else if (!Array.isArray(trackingData)) {
+        if (!response.ok) {
+            throw new Error(`Failed to get ORDER_TRACKING data: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        let trackingData = data.record;
+        
+        // Ensure trackingData is an array
+        if (!Array.isArray(trackingData)) {
             console.warn('ORDER_TRACKING data is not an array, returning empty array');
             return [];
         }
@@ -364,28 +390,37 @@ async function updateOrderStatus(orderId, newStatus, updatedBy = 'system') {
         }
         
         // Update in ORDER_TRACKING bin
-        let trackingData = await getBinData('ORDER_TRACKING');
+        const response = await fetch(`${CONFIG.JSONBIN_URL}/${CONFIG.BINS.ORDER_TRACKING}/latest`, {
+            method: 'GET',
+            headers: {
+                'X-Master-Key': CONFIG.MASTER_KEY
+            }
+        });
         
-        // Ensure trackingData is a proper array (not nested)
-        if (Array.isArray(trackingData) && trackingData.length > 0 && Array.isArray(trackingData[0])) {
-            console.warn('ORDER_TRACKING data is a nested array, fixing it');
-            trackingData = [];
-        } else if (!Array.isArray(trackingData)) {
-            console.warn('ORDER_TRACKING data is not an array, initializing as empty array');
-            trackingData = [];
+        if (!response.ok) {
+            throw new Error(`Failed to get ORDER_TRACKING data: ${response.status}`);
         }
         
-        const trackingIndex = trackingData.findIndex(order => order.order_id === orderId);
+        const data = await response.json();
+        let trackingData = data.record;
         
-        if (trackingIndex !== -1) {
-            const oldStatus = trackingData[trackingIndex].status;
-            trackingData[trackingIndex].status = newStatus;
+        // Ensure trackingData is an array
+        if (!Array.isArray(trackingData)) {
+            console.warn('ORDER_TRACKING data is not an array, initializing as empty array');
+            trackingData = [];
+        } else {
+            const trackingIndex = trackingData.findIndex(order => order.order_id === orderId);
             
-            if (newStatus === 'processed' && oldStatus !== 'processed') {
-                trackingData[trackingIndex].processed_at = new Date().toISOString();
+            if (trackingIndex !== -1) {
+                const oldStatus = trackingData[trackingIndex].status;
+                trackingData[trackingIndex].status = newStatus;
+                
+                if (newStatus === 'processed' && oldStatus !== 'processed') {
+                    trackingData[trackingIndex].processed_at = new Date().toISOString();
+                }
+                
+                await updateBinData('ORDER_TRACKING', trackingData);
             }
-            
-            await updateBinData('ORDER_TRACKING', trackingData);
         }
         
         // Log status change
