@@ -218,8 +218,11 @@ async function queueOrder(order) {
         // Update orders in bin
         await updateBinData('ORDERS', orders);
         
-        // Add to order tracking
-        await addOrderToTracking(order);
+        // Add to order tracking - this is critical for the tracking feature
+        const trackingSuccess = await addOrderToTracking(order);
+        if (!trackingSuccess) {
+            console.warn('Failed to add order to tracking, but order was queued successfully');
+        }
         
         // Log order queued
         const systemLog = await getBinData('SYSTEM_LOG');
@@ -244,12 +247,24 @@ async function addOrderToTracking(order) {
     try {
         console.log('Adding order to tracking:', order);
         
-        // Get current tracking data
-        let trackingData = await getBinData('ORDER_TRACKING');
+        // Make sure order has customer_email
+        if (!order.customer_email) {
+            console.warn('Order missing customer_email, tracking may not work properly');
+        }
         
-        // Ensure trackingData is an array
-        if (!Array.isArray(trackingData)) {
-            console.warn('ORDER_TRACKING data is not an array, initializing as empty array');
+        // Get current tracking data - use the specific bin ID directly
+        let trackingData = [];
+        try {
+            // First try to get existing tracking data
+            trackingData = await getBinData('ORDER_TRACKING');
+            
+            // Ensure trackingData is an array
+            if (!Array.isArray(trackingData)) {
+                console.warn('ORDER_TRACKING data is not an array, initializing as empty array');
+                trackingData = [];
+            }
+        } catch (error) {
+            console.warn('Error getting tracking data, initializing as empty array:', error);
             trackingData = [];
         }
         
