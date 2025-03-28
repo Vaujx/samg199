@@ -9,12 +9,12 @@
     const ADMIN_CONFIG = {
         ADMIN_PASSWORD: "admin123",
         BIN_IDS: {
-            SYSTEM_STATUS: "67e5fbd8561e97a50f4996", // Updated with your actual bin ID
+            SYSTEM_STATUS: "67e54b6d8a456b79667dbebe", // Updated with your actual bin ID
             ORDERS: "67e54c158561e97a50f3f456", 
-            SYSTEM_LOG: "67e54c2b8960c979a579877a"
+            SYSTEM_LOG: "67e5fbdd8561e97a50f44996"
         },
         // JSONBin API key - this should be your actual API key
-        MASTER_KEY: "$2a$10$Ht/Qs9XzKYW5H1eCy.xdcuDIHleLdQxJFIjS6UMNUKEbDULGpjFAe"
+        MASTER_KEY: "$2a$10$qrZ9tpKi.ajyrHn7A.dMbeABtgoW6dnb6aVVQWDxBjhfPNSw9skEC"
     };
 
     // Custom notification function
