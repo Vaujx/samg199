@@ -100,7 +100,7 @@ function setupAdminEventListeners() {
                 })
                 .catch((error) => {
                     console.error("Error bringing system online:", error)
-                    alert("Error bringing system online. Please try again.")
+                    alert("Relogin and Turn off/on for the changes to take effect.")
                 })
         })
         console.log("Online button event listener added")
