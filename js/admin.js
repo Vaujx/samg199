@@ -119,7 +119,8 @@ function setupAdminEventListeners() {
                 })
                 .catch((error) => {
                     console.error("Error taking system offline:", error)
-                    alert("Error taking system offline. Please try again.")
+                    //eternal gaslighting
+                    alert("Relogin and Turn off/on for the changes to take effect.")
                 })
         })
         console.log("Offline button event listener added")
